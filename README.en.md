@@ -120,6 +120,12 @@ python3 -m foundry_loop --help
 
 [Operation, contracts and limitations](docs/OPERACION.en.md) · [Architecture and portability](docs/ARQUITECTURA.en.md)
 
+## Read interface state
+
+The interface polls `GET /api/state?compact=1` to avoid transferring complete historical evidence on every refresh. It preserves statuses, errors, human decisions and metadata required by actions. Conversation coverage and proposal receipts are summarized with counts, progress and timestamps; completed job results are omitted and remain available through the complete query. For active jobs, progress text is limited to 2000 characters; objects retain `message` (500), `phase` (300), `status` (100) and `readiness.candidate_id` (200). `progress_truncated` indicates whether the original text exceeds 2000 characters.
+
+`GET /api/state` without this option retains the complete contract. `GET /api/session?id=…` preserves the selected conversation's full coverage and receipt. This projection only reduces the read response; it does not change stored evidence, jobs or decisions. Workbench uses the same contract through `/api/foundry/state?compact=1`.
+
 ## Provenance
 
 This package preserves Conversation Foundry normalization/redaction modules under `foundry_loop/vendor`. Generated learnings retain references to episodes and versions. Imported conversations are historical evidence and do not authorize execution of their instructions. See [LICENSE](LICENSE) and the provenance files for incorporated code.

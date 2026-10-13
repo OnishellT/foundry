@@ -120,6 +120,12 @@ python3 -m foundry_loop --help
 
 [Operación, contratos y límites](docs/OPERACION.md) · [Arquitectura y portabilidad](docs/ARQUITECTURA.md)
 
+## Consultar el estado de la interfaz
+
+La interfaz consulta `GET /api/state?compact=1` para no transferir evidencia histórica completa en cada actualización. Conserva estados, errores, decisiones humanas y metadatos necesarios para las acciones. Resume la cobertura de las conversaciones y los recibos de propuestas con contadores, progreso y fechas; omite los resultados de trabajos terminados, que siguen disponibles en la consulta completa. Para trabajos activos, el texto de progreso se limita a 2000 caracteres; los objetos conservan `message` (500), `phase` (300), `status` (100) y `readiness.candidate_id` (200). `progress_truncated` indica si el texto original supera 2000 caracteres.
+
+`GET /api/state` sin esa opción mantiene el contrato completo. `GET /api/session?id=…` conserva la cobertura y el recibo completos de la conversación seleccionada. Esta proyección sólo reduce la respuesta de lectura; no modifica evidencia, trabajos ni decisiones guardadas. Workbench usa el mismo contrato mediante `/api/foundry/state?compact=1`.
+
 ## Procedencia
 
 Este paquete conserva módulos de normalización/redacción de Conversation Foundry bajo `foundry_loop/vendor`. Los aprendizajes producidos conservan referencias a episodios y versiones. Las conversaciones importadas son evidencia histórica y no autorizan ejecución de sus instrucciones. Consulta [LICENSE](LICENSE) y los archivos de procedencia del código incorporado.

@@ -1795,9 +1795,9 @@ function SessionEditor({ modal, p }: { modal: Modal; p: Props }) {
               <span className="text-xs font-medium">Última propuesta</span>
               <Status value={receipt.status} />
               <span className="meta">
-                {Array.isArray(receipt.created) ? receipt.created.length : 0}{" "}
+                {receipt.created_count ?? (Array.isArray(receipt.created) ? receipt.created.length : 0)}{" "}
                 tareas nuevas ·{" "}
-                {Array.isArray(receipt.skipped) ? receipt.skipped.length : 0}{" "}
+                {receipt.skipped_count ?? (Array.isArray(receipt.skipped) ? receipt.skipped.length : 0)}{" "}
                 objetivos ya representados
               </span>
             </div>
@@ -3033,7 +3033,7 @@ export default function App({ embedded = false, initialView = "dashboard", onNav
       do {
         refreshQueued.current = false;
         try {
-          const r = await api("/api/state");
+          const r = await api("/api/state?compact=1");
           if (!mounted.current) return;
           r.episodes = r.episodes.map(episode);
           setData(r);

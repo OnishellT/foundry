@@ -45,7 +45,7 @@ def serve(root,port=1739,ready=None):
             if path.startswith('/api/'):
                 if not self.auth():return self.reply(401,{'error':'Abre la aplicación desde conversation-foundry open para iniciar sesión local.'})
                 try:
-                    if path=='/api/state':return self.reply(200,app.state())
+                    if path=='/api/state':return self.reply(200,app.state(compact=params.get('compact',['0'])[0]=='1'))
                     if path=='/api/candidate/readiness':return self.reply(200,app.readiness(params['id'][0]))
                     if path=='/api/episodes':
                         session_id=params['session_id'][0]

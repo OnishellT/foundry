@@ -79,15 +79,46 @@ class App:
         readiness=self.readiness(id,deep=True)
         if not readiness['ready']: return {'status':'setup_required','readiness':readiness}
         return {'job_id':self.store.job('evaluate',id)}
-    def state(self):
+    def state(self, compact=False):
         s=self.store
-        result={key:[decoded(r)for r in s.rows('SELECT * FROM '+key+' ORDER BY '+('updated'if key=='sessions'else'created')+' DESC LIMIT 500')]
-                for key in ('sources','episodes','candidates','cases','jobs','experiments','versions')}
+        result={}
+        for key in ('sources','episodes','candidates','cases','jobs','experiments','versions'):
+            # Historical job results can contain entire transcripts. The web
+            # overview displays only status, not their stored result payload.
+            fields=("id,kind,subject,payload,status,error,created,updated,"
+                    "CASE WHEN status NOT IN ('queued','running','blocked') THEN '' "
+                    "WHEN CASE WHEN json_valid(progress) THEN json_type(progress) END='object' THEN "
+                    "json_object('message',substr(json_extract(progress,'$.message'),1,500),"
+                    "'phase',substr(json_extract(progress,'$.phase'),1,300),"
+                    "'status',substr(json_extract(progress,'$.status'),1,100),"
+                    "'readiness',json_object('candidate_id',substr(json_extract(progress,'$.readiness.candidate_id'),1,200))) "
+                    "ELSE substr(progress,1,2000) END AS progress,"
+                    "length(progress)>2000 AS progress_truncated") if compact and key=='jobs' else '*'
+            result[key]=[decoded(r) for r in s.rows('SELECT '+fields+' FROM '+key+' ORDER BY created DESC LIMIT 500')]
         result['episodes']=[s.enrich_episode(row) for row in result['episodes']]
         result['episodes']=[row for row in result['episodes'] if not row['superseded']]
         # Capture time is not conversation activity. Backfilled metadata is
         # preferred; file mtime keeps older imports discoverable during migration.
-        sessions=[decoded(r) for r in s.rows('SELECT * FROM sessions')]
+        session_fields=("sessions.id,source_id,path,title,revision,updated,completion,"
+                        "json_object('status',json_extract(coverage,'$.status'),"
+                        "'activity_at',json_extract(coverage,'$.activity_at'),"
+                        "'event_count',json_extract(coverage,'$.event_count'),"
+                        "'issue_count',json_extract(coverage,'$.issue_count')) AS coverage,"
+                        "CASE WHEN proposals.value IS NOT NULL THEN json_object("
+                        "'status',json_extract(proposals.value,'$.status'),"
+                        "'created_count',coalesce(json_array_length(proposals.value,'$.created'),0),"
+                        "'skipped_count',coalesce(json_array_length(proposals.value,'$.skipped'),0),"
+                        "'progress',json_object('completed_chunks',json_extract(proposals.value,'$.progress.completed_chunks'),"
+                        "'total_chunks',json_extract(proposals.value,'$.progress.total_chunks')),"
+                        "'error',json_extract(proposals.value,'$.error'),"
+                        "'started_at',json_extract(proposals.value,'$.started_at'),"
+                        "'updated_at',json_extract(proposals.value,'$.updated_at'),"
+                        "'finished_at',json_extract(proposals.value,'$.finished_at')) END AS task_proposal") if compact else '*'
+        # Fetch the bounded display metadata directly: parsing every source's
+        # full diagnostics on each poll is unnecessary. Session detail and the
+        # default full state retain the original coverage and job results.
+        session_join=" LEFT JOIN kv proposals ON proposals.key='task_proposals:'||sessions.id||':'||sessions.revision" if compact else ''
+        sessions=[decoded(r) for r in s.rows('SELECT '+session_fields+' FROM sessions'+session_join)]
         task_counts={r['session_id']:r['total'] for r in s.rows("SELECT session_id,COUNT(*) AS total FROM episodes e WHERE NOT EXISTS (SELECT 1 FROM kv WHERE key='task_superseded:'||e.id) GROUP BY session_id")}
         for row in sessions:
             coverage=row.get('coverage') or {}
@@ -98,13 +129,19 @@ class App:
             row['activity_at']=activity
             row['captured_at']=row['updated']
             row['task_count']=task_counts.get(row['id'],0)
-            row['task_proposal']=s.get('task_proposals:'+row['id']+':'+row['revision'])
+            row['task_proposal']=(json.loads(row['task_proposal']) if row['task_proposal'] else None) if compact else s.get('task_proposals:'+row['id']+':'+row['revision'])
         sessions.sort(key=lambda r:(r['activity_at'] or 0,r['updated'],r['id']),reverse=True)
         result['sessions']=sessions[:500]
-        for row in result['jobs']:row['payload']=json.loads(row['payload'])
+        for row in result['jobs']:
+            row['payload']=json.loads(row['payload'])
+            if compact and row['progress'].startswith('{'):
+                try: row['progress']=json.loads(row['progress'])
+                except ValueError: pass
         result.update(config=s.get('config'),active_version=s.get('active_version'),diagnostics=diagnostics(s.get('config')),
                       capture_status=s.get('capture_status',{}),limits={'list_rows':500},
                       total_sessions=len(sessions))
+        if compact:
+            result['limits'].update(job_progress_chars=2000,state_compact=True)
         return result
     def action(self,body):
         if not isinstance(body,dict):raise Invalid('Solicitud inválida.')
