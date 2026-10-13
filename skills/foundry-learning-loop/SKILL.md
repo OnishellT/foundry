@@ -5,6 +5,8 @@ description: Use at the start and completion of agent work to load validated Con
 
 # Foundry learning loop
 
+[English](SKILL.md) | [Español](SKILL.es.md)
+
 Use the installed `conversation-foundry` CLI for durable operations. Read its
 `--help` and `call --help` for the available JSON action interface. `status`
 reports the local service; `start --background` starts it when requested.

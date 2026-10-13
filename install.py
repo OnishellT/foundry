@@ -19,7 +19,7 @@ import time
 APP = 'conversation-foundry'
 MARKER = 'conversation-foundry-owned-v1'
 ROOT = Path(__file__).resolve().parent
-BUNDLES = ('foundry_loop', 'ui', 'skills', 'examples', 'docs', 'README.md', 'LICENSE', 'NOTICE', 'VENDOR_PROVENANCE.json', 'install.py', 'install.sh')
+BUNDLES = ('foundry_loop', 'ui', 'skills', 'examples', 'docs', 'README.md', 'README.en.md', 'LICENSE', 'NOTICE', 'VENDOR_PROVENANCE.json', 'install.py', 'install.sh')
 LAUNCHER = '''#!/usr/bin/env python3
 # conversation-foundry-owned-v1
 import json, os, pathlib, sys

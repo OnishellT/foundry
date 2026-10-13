@@ -78,9 +78,17 @@ def serve(root,port=1739,ready=None):
                 body=json.loads(self.rfile.read(length));result=app.action(body);self.reply(200,result)
                 if body.get('action')=='shutdown':threading.Thread(target=server.shutdown,daemon=True).start()
             except(Exception)as e:self.reply(400,{'error':clean(str(e))[:2500]})
-    server=Server(('127.0.0.1',port),Handler);server.app=app
-    metadata={'port':server.server_port,'pid':os.getpid(),'started':now()};write_json(app.store.root/'server.json',metadata)
-    if ready:ready(metadata)
+    server=None
+    try:
+        server=Server(('127.0.0.1',port),Handler);server.app=app
+        metadata={'port':server.server_port,'pid':os.getpid(),'started':now()};write_json(app.store.root/'server.json',metadata)
+        if ready:ready(metadata)
+    except BaseException:
+        # No workers or HTTP handlers have started yet; startup failures can
+        # safely release both resources without racing database users.
+        if server is not None:server.server_close()
+        app.store.db.close()
+        raise
     app.start_worker()
     try:server.serve_forever(poll_interval=.25)
     finally:

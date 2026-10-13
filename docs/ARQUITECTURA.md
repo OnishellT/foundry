@@ -1,5 +1,7 @@
 # Arquitectura y portabilidad
 
+[English](ARQUITECTURA.en.md) | [Español](ARQUITECTURA.md)
+
 ```text
 Adaptadores locales → eventos normalizados → revisiones SQLite
                                          ↓

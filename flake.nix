@@ -10,7 +10,7 @@
         nativeBuildInputs = [ pkgs.makeWrapper ];
         installPhase = ''
           mkdir -p $out/share/conversation-foundry $out/bin
-          cp -r foundry_loop skills examples docs LICENSE NOTICE VENDOR_PROVENANCE.json $out/share/conversation-foundry/
+          cp -r foundry_loop skills examples docs README.md README.en.md LICENSE NOTICE VENDOR_PROVENANCE.json $out/share/conversation-foundry/
           makeWrapper ${pkgs.python3}/bin/python3 $out/bin/conversation-foundry \
             --set PYTHONPATH $out/share/conversation-foundry --set PYTHONSAFEPATH 1 --add-flags "-m foundry_loop"
         '';

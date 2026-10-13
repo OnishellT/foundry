@@ -1,5 +1,7 @@
 # Conversation Foundry · Loop
 
+[English](README.en.md) | [Español](README.md)
+
 Una aplicación local para capturar conversaciones de agentes, confirmar resultados, proponer skills/reglas/tools y comparar su efecto antes de activarlos. Interfaz en español, base SQLite y runtime **Python 3.11+ sin dependencias de Python externas**. Funciona sin acceso a una CDN ni compilación de frontend.
 
 ## Instalar y abrir
@@ -61,9 +63,9 @@ Activa **Extraer aprendizajes automáticamente** para que guardar una valoració
 Consulta las capacidades aceptadas desde tu agente o loop RLM, o sincronízalas con un proyecto:
 
 ```bash
-conversation-foundry catalog --project /ruta/al/proyecto
-conversation-foundry context --domain python-http --project /ruta/al/proyecto
-conversation-foundry sync --project /ruta/al/proyecto --domain python-http
+conversation-foundry catalog --project /path/to/project
+conversation-foundry context --domain python-http --project /path/to/project
+conversation-foundry sync --project /path/to/project --domain python-http
 ```
 
 La skill de integración incluida enseña al agente a consultar el arnés activo. Usa el mismo identificador de dominio en casos, candidatos e integración. Consulta [el contrato de integración](docs/OPERACION.md#conectar-el-arnés-activo-a-un-agente-o-rlm).

@@ -1,6 +1,6 @@
 from __future__ import annotations
-import json, os, sqlite3, threading
-from contextlib import contextmanager
+import json, os, sqlite3, tempfile, threading
+from contextlib import closing, contextmanager
 from pathlib import Path
 from .common import *
 
@@ -65,7 +65,10 @@ class Store:
     def rows(self,sql,args=()):
         with self.lock: return [dict(r) for r in self.db.execute(sql,args)]
     def one(self,sql,args=()):
-        rows=self.rows(sql,args); return rows[0] if rows else None
+        # Avoid materializing an entire result when the caller needs one row.
+        with self.lock, closing(self.db.execute(sql,args)) as cursor:
+            row=cursor.fetchone()
+            return dict(row) if row is not None else None
     def execute(self,sql,args=()):
         with self.lock: return self.db.execute(sql,args)
     @contextmanager
@@ -106,6 +109,14 @@ class Store:
         # A completed external call cannot safely be assumed unexecuted after a crash.
         self.execute("UPDATE jobs SET status='interrupted',error='El proceso se reinició. Reintenta para continuar con checkpoints.',updated=? WHERE status='running'",(now(),))
     def backup(self):
-        path=self.root/'backups'/('foundry-'+str(int(now()))+'.sqlite')
-        with self.lock, sqlite3.connect(path) as dest: self.db.backup(dest)
+        # Allocate exclusively: two requests in one second must retain both
+        # snapshots. mkstemp also creates the database with private permissions.
+        fd,name=tempfile.mkstemp(prefix='foundry-'+str(int(now()))+'-',suffix='.sqlite',dir=self.root/'backups')
+        os.close(fd);path=Path(name)
+        try:
+            with self.lock, closing(sqlite3.connect(path)) as dest:
+                self.db.backup(dest)
+        except BaseException:
+            path.unlink(missing_ok=True)
+            raise
         return str(path)

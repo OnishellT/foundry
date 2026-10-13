@@ -62,6 +62,16 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual((release/'foundry_loop/web/assets/main.js').read_text(),'compiled app')
         self.assertFalse((release/'ui/node_modules').exists())
         self.assertFalse((release/'ui/dist').exists())
+    def test_bilingual_readme_and_skill_links_survive_portable_install(self):
+        (self.source/'README.md').write_text('[English](README.en.md)')
+        (self.source/'README.en.md').write_text('[Español](README.md)')
+        skill=self.source/'skills'/'foundry-learning-loop';skill.mkdir(parents=True)
+        (skill/'SKILL.md').write_text('[Español](SKILL.es.md)')
+        (skill/'SKILL.es.md').write_text('[English](SKILL.md)')
+        launch,cfg=installer.install(self.root/'bilingual portable',portable=True,source=self.source)
+        release=launch.parent.parent/'share'/'conversation-foundry'/'releases'/cfg['release']
+        for relative in ('README.md','README.en.md','skills/foundry-learning-loop/SKILL.md','skills/foundry-learning-loop/SKILL.es.md'):
+            self.assertEqual((release/relative).read_text(),(self.source/relative).read_text())
     def test_cannot_overwrite_unowned_install(self):
         prefix=self.root/'unowned'; (prefix/'bin').mkdir(parents=True)
         launch=prefix/'bin'/'conversation-foundry'; launch.write_text('some unrelated app')

@@ -1,5 +1,7 @@
 # Operación
 
+[English](OPERACION.en.md) | [Español](OPERACION.md)
+
 ## Estados y expectativas
 
 La captura detecta señales de finalización y propone tareas sobre una revisión completa de la conversación. **No confirma que estén terminadas.** Hay tres decisiones humanas independientes:
@@ -17,6 +19,17 @@ La promoción contrasta la evidencia y la configuración del experimento con el 
 ## Configurar proveedores
 
 El proveedor de extracción lee evidencia y devuelve una propuesta estructurada. El proveedor de repetición modifica un workspace desechable para resolver una tarea. Puedes configurar ambos de manera independiente en Configuración.
+
+**Pi:** utiliza una instalación autenticada de Pi, normalmente con el comando `["pi"]`, proveedor del modelo `openai-codex`, modelo `gpt-6.1-sol` y razonamiento `medium`. El análisis se ejecuta en una carpeta temporal vacía, sin herramientas, extensiones, MCP, skills, archivos de contexto ni sesiones persistentes. Foundry solicita JSON y valida la respuesta localmente; no afirma que Pi imponga un esquema durante la generación. La repetición conserva las herramientas integradas y opera dentro del workspace del caso, manteniendo desactivadas las extensiones y las sesiones heredadas.
+
+El CLI permite configurar análisis y repetición por separado, sin ejecutar inferencia:
+
+```bash
+conversation-foundry configure --provider pi --provider-id openai-codex \
+  --model gpt-6.1-sol --reasoning medium --target analysis
+```
+
+`--target analysis` es el valor predeterminado y conserva la configuración de repetición. Usa `--target replay` para cambiar sólo el agente de evaluación o `--target both` para aplicar explícitamente los cambios a ambos. Al cambiar entre Pi y Codex se selecciona el ejecutable correspondiente, salvo que indiques `--agent-command`. Pi requiere un único ejecutable en ese array; al cambiar al adaptador `command`, debes proporcionar su array de argumentos explícitamente.
 
 **Codex:** instala y autentica el CLI por los mecanismos del propio agente. Foundry no guarda claves de API. Configura el comando como una lista, normalmente `["codex"]`, y opcionalmente un modelo. El diagnóstico comprueba el ejecutable; la autenticación se confirma al realizar una llamada.
 
@@ -56,7 +69,7 @@ Los procesos se ejecutan con los permisos del usuario local. Los directorios sep
 
 ## Acceso y diagnóstico
 
-El servidor escucha en loopback y las llamadas al API requieren `X-Foundry-Token`. Abre el enlace de `start`, `status` u `open`: el token pasa del fragmento de URL a `sessionStorage` y se elimina de la dirección visible. No compartas ese enlace privado.
+El servidor escucha en loopback y las llamadas al API requieren `X-Foundry-Token`. Abre el enlace de `start` u `open`; `status` informa del estado sin mostrar el token. Al abrir el panel, el token pasa del fragmento de URL a `sessionStorage` y se elimina de la dirección visible. No compartas ese enlace privado.
 
 - Si no aparece la UI, ejecuta `conversation-foundry status` y `doctor`; comprueba el puerto.
 - Si hay cero conversaciones, confirma que la fuente esté activa y pulsa «Escanear ahora». Mira su error y la cobertura de la sesión.
@@ -70,13 +83,13 @@ El servidor escucha en loopback y las llamadas al API requieren `X-Foundry-Token
 El registro aceptado se consulta por dominio y proyecto. En un loop RLM, ejecuta al inicio de la tarea y después de una promoción:
 
 ```bash
-conversation-foundry context --domain python-http --project /ruta/al/proyecto
+conversation-foundry context --domain python-http --project /path/to/project
 ```
 
 El adaptador del agente debe incorporar el contexto devuelto a sus instrucciones de trabajo y cargar las skills pertinentes. Sólo se consultan capacidades de la versión activa; las propuestas pendientes permanecen fuera del contexto. Si trabajas directamente en un proyecto, puedes materializar la integración con:
 
 ```bash
-conversation-foundry sync --project /ruta/al/proyecto --domain python-http
+conversation-foundry sync --project /path/to/project --domain python-http
 ```
 
 La skill de integración distribuida con Foundry indica al agente que consulte el contexto activo. El RLM conserva la responsabilidad de llamar al proveedor y ejecutar las herramientas; Foundry conserva la evidencia, evalúa comparaciones y decide qué versión está activa. El dominio es un identificador operativo, por ejemplo `python-http`: debe ser consistente entre casos, candidatos y consultas de contexto.
