@@ -74,6 +74,7 @@ type Props = {
   open: (modal: Modal) => void;
   refresh: () => Promise<void>;
   busy: boolean;
+  onOpenCaptureSettings?: () => void;
 };
 const statusNames: Record<string, string> = {
   blocked: "Preparación pendiente",
@@ -1178,7 +1179,7 @@ function Sources(p: Props) {
               <Button
                 variant="link"
                 size="sm"
-                onClick={() => p.open({ kind: "page", id: "settings" })}
+                onClick={() => p.onOpenCaptureSettings ? p.onOpenCaptureSettings() : p.open({ kind: "page", id: "settings" })}
               >
                 Activar en Configuración
               </Button>
@@ -1546,7 +1547,7 @@ function Settings(p: Props) {
                   "auto_derive",
                   "auto_evaluate",
                 ])
-                  cfg[k] = fd.has(k);
+                  if (k !== "capture" || !p.onOpenCaptureSettings) cfg[k] = fd.has(k);
                 for (const [k] of numbers) cfg[k] = Number(v[k]);
                 for (const k of ["provider", "replay"])
                   cfg[k] = {
@@ -1573,6 +1574,10 @@ function Settings(p: Props) {
               }}
             >
               <div className="grid gap-5">
+                {p.onOpenCaptureSettings && <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="text-sm">{c.capture ? "Captura activa" : "Captura pausada"}</span>
+                  <Button type="button" variant="outline" size="sm" onClick={p.onOpenCaptureSettings}>Gestionar captura en Workbench</Button>
+                </div>}
                 {[
                   [
                     "capture",
@@ -1594,7 +1599,7 @@ function Settings(p: Props) {
                     "Evaluar propuestas automáticamente",
                     "Con casos preparados · consume cuota.",
                   ],
-                ].map(([k, t, h]) => (
+                ].filter(([k]) => k !== "capture" || !p.onOpenCaptureSettings).map(([k, t, h]) => (
                   <label
                     key={k}
                     className="flex items-start justify-between gap-5"
@@ -3000,7 +3005,7 @@ const nav = [
   ["experiments", "Experimentos", FlaskConical],
   ["settings", "Configuración", Settings2],
 ] as const;
-export default function App({ embedded = false, initialView = "dashboard", onNavigate }: { embedded?: boolean; initialView?: string; onNavigate?: (view: string) => void } = {}) {
+export default function App({ embedded = false, initialView = "dashboard", onNavigate, onOpenCaptureSettings }: { embedded?: boolean; initialView?: string; onNavigate?: (view: string) => void; onOpenCaptureSettings?: () => void } = {}) {
   const [data, setData] = useState<AppState | null>(null),
     [page, setPageState] = useState(initialView),
     [modal, setModal] = useState<Modal | null>(null),
@@ -3106,7 +3111,7 @@ export default function App({ embedded = false, initialView = "dashboard", onNav
       setBusy(false);
     }
   }
-  const p: Props = { data: data!, run, open, refresh, busy };
+  const p: Props = { data: data!, run, open, refresh, busy, onOpenCaptureSettings };
   const title =
     modal?.kind === "session"
       ? "Tareas de la conversación"
