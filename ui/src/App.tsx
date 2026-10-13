@@ -48,6 +48,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   api,
+  apiFetch,
   setToken,
   date,
   pretty,
@@ -1047,6 +1048,9 @@ function Sources(p: Props) {
         title="Fuentes conectadas"
         actions={
           <>
+            <Button variant="outline" onClick={() => p.run("source.discover", {}, "Fuentes detectadas en este equipo.")}>
+              <Search /> Detectar fuentes
+            </Button>
             <Button
               variant="outline"
               disabled={!p.data.config.capture}
@@ -1095,6 +1099,9 @@ function Sources(p: Props) {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
+                  <Button variant="ghost" size="sm" onClick={() => p.open({kind: "source", row: s})} aria-label={"Cambiar ruta de " + s.path}>
+                    <FolderOpen /> Cambiar ruta
+                  </Button>
                   <Status value={s.enabled ? "active" : "Pausada"} />
                   <Switch
                     checked={!!s.enabled}
@@ -2450,11 +2457,7 @@ function CandidateEditor({ modal, p }: { modal: Modal; p: Props }) {
         candidate_id: c.id,
       });
       if (r.download || r.url) {
-        const response = await fetch(r.download || r.url, {
-          headers: {
-            "X-Foundry-Token": sessionStorage.getItem("foundry-token") || "",
-          },
-        });
+        const response = await apiFetch(r.download || r.url);
         if (!response.ok) throw Error("No se pudo descargar el paquete.");
         const url = URL.createObjectURL(await response.blob());
         const a = document.createElement("a");
@@ -2959,24 +2962,25 @@ function ModalBody({
       <Form
         onSave={async (v) => {
           const r = await p.run(
-            "source.add",
-            { path: v.path, adapter: v.adapter },
+            modal.row ? "source.relink" : "source.add",
+            { path: v.path, adapter: v.adapter, ...(modal.row ? {id: modal.row.id} : {}) },
             "Fuente conectada.",
           );
           if (r) close();
         }}
       >
-        <Choice
+        {!modal.row && <Choice
           name="adapter"
           label="Formato del agente"
           options={["codex", "claude", "pi", "omp", "canonical"].map((k) => [
             k,
             k,
           ])}
-        />
+        />}
         <Field
           name="path"
           label="Ruta local"
+          initial={modal.row?.path || ""}
           required
           hint="Carpeta de sesiones o archivo JSONL en este equipo."
         />
@@ -2996,9 +3000,9 @@ const nav = [
   ["experiments", "Experimentos", FlaskConical],
   ["settings", "Configuración", Settings2],
 ] as const;
-export default function App() {
+export default function App({ embedded = false, initialView = "dashboard", onNavigate }: { embedded?: boolean; initialView?: string; onNavigate?: (view: string) => void } = {}) {
   const [data, setData] = useState<AppState | null>(null),
-    [page, setPage] = useState("dashboard"),
+    [page, setPageState] = useState(initialView),
     [modal, setModal] = useState<Modal | null>(null),
     [notice, setNotice] = useState<{
       text: string;
@@ -3008,34 +3012,60 @@ export default function App() {
     [error, setError] = useState(""),
     [auth, setAuth] = useState(false),
     [busy, setBusy] = useState(false);
-  const fetching = useRef(false);
+  const fetching = useRef<Promise<void> | null>(null);
+  const refreshQueued = useRef(false);
+  const mounted = useRef(true);
+  const setPage = (value: string) => { setPageState(value); onNavigate?.(value); };
+  useEffect(() => { setPageState(initialView); setModal(null); }, [initialView]);
   async function refresh() {
-    if (fetching.current) return;
-    fetching.current = true;
+    if (fetching.current) {
+      // A mutation can finish after the current snapshot started. Wait for a
+      // subsequent snapshot before confirming that its state has refreshed.
+      refreshQueued.current = true;
+      return fetching.current;
+    }
+    const load = async () => {
+      do {
+        refreshQueued.current = false;
+        try {
+          const r = await api("/api/state");
+          if (!mounted.current) return;
+          r.episodes = r.episodes.map(episode);
+          setData(r);
+          setError("");
+          setAuth(false);
+        } catch (e) {
+          if (!mounted.current) return;
+          const msg = (e as Error).message;
+          setError(msg);
+          if (
+            (e as Error & { status?: number }).status === 401 ||
+            /401|token|autori/i.test(msg)
+          )
+            setAuth(true);
+        }
+      } while (refreshQueued.current && mounted.current);
+    };
+    fetching.current = load();
     try {
-      const r = await api("/api/state");
-      r.episodes = r.episodes.map(episode);
-      setData(r);
-      setError("");
-      setAuth(false);
-    } catch (e) {
-      const msg = (e as Error).message;
-      setError(msg);
-      if (
-        (e as Error & { status?: number }).status === 401 ||
-        /401|token|autori/i.test(msg)
-      )
-        setAuth(true);
+      await fetching.current;
     } finally {
-      fetching.current = false;
+      fetching.current = null;
     }
   }
   useEffect(() => {
+    mounted.current = true;
     void refresh();
-    const t = setInterval(() => {
-      void refresh();
-    }, 3000);
-    return () => clearInterval(t);
+    const tick = () => {
+      if (!document.hidden && !fetching.current) void refresh();
+    };
+    const t = setInterval(tick, 3000);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      mounted.current = false;
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", tick);
+    };
   }, []);
   function open(m: Modal) {
     if (m.kind === "page") {
@@ -3094,8 +3124,8 @@ export default function App() {
                   ? modal.row?.title
                   : "Resultado";
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
+    <div className={embedded ? "app-shell foundry-embedded" : "app-shell"}>
+      {!embedded && <aside className="sidebar">
         <div className="brand">
           <span className="brand-icon">
             <Layers3 size={19} />
@@ -3131,7 +3161,7 @@ export default function App() {
             <span>v1.0</span>
           </div>
         </div>
-      </aside>
+      </aside>}
       <div className="main-shell">
         <header className="topbar">
           <div className="flex items-center gap-2 text-xs muted">
@@ -3230,6 +3260,12 @@ export default function App() {
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
+          {notice?.error && (
+            <div role="alert" className="notice error flex gap-4 items-start">
+              <span className="flex-1">{notice.text}</span>
+              <button aria-label="Cerrar aviso" onClick={() => setNotice(null)}><X size={16} /></button>
+            </div>
+          )}
           <div
             className="modal-body"
             key={modal?.kind + ":" + (modal?.id || modal?.row?.id || "")}
@@ -3240,7 +3276,7 @@ export default function App() {
           </div>
         </DialogContent>
       </Dialog>
-      {notice && (
+      {notice && !(modal && notice.error) && (
         <div
           role={notice.error ? "alert" : "status"}
           className={

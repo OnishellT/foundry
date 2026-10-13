@@ -128,6 +128,13 @@ Este paquete conserva módulos de normalización/redacción de Conversation Foun
 
 Para una instalación de usuario, usa `python3 install.py --skills --start`. La opción `--skills` copia `foundry-learning-loop` a los directorios de skills de Codex, Claude Code, Pi y OMP **sólo si sus carpetas de agente ya existen**. La marca de propiedad y el hash permiten actualizar copias intactas; una skill ajena o modificada por ti se conserva y se informa en la salida. Al desinstalar, sólo se eliminan copias propias sin modificaciones. `--dry-run --skills` muestra los destinos sin escribir. El modo portable mantiene la skill dentro del paquete y rechaza `--skills` para evitar dependencia de rutas externas; puedes instalarla explícitamente en cada equipo mediante una instalación de usuario.
 
+Los componentes de interfaz `ui/src/components/ui/tabs.tsx` y `separator.tsx`
+conservan su origen shadcn/ui `base-nova` con una adaptación local de
+compatibilidad: sus variantes Tailwind consultan `data-orientation` emitido por
+Base UI 1.9.0 (`data-[orientation=horizontal|vertical]` y variantes de grupo),
+en lugar de los atributos booleanos `data-horizontal`/`data-vertical` que no
+emite esa versión. Se conserva la semántica y navegación del componente nativo.
+
 ### Compilar la interfaz
 
 La aplicación instalada incluye la interfaz compilada y funciona sin Node, CDN ni servicios web externos. Su código está en `ui/`: React, TypeScript, Tailwind CSS 4 y componentes oficiales shadcn/ui `base-nova` sobre Base UI. Las versiones exactas y `bun.lock` permiten reconstruirla:

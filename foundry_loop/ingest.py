@@ -52,6 +52,60 @@ def register_source(store, path, adapter='canonical'):
     return store.one('SELECT * FROM sources WHERE id=?', (id,))
 
 
+def discover_sources(store):
+    """Connect standard session folders from this machine, never credentials."""
+    candidates = [
+        ('codex', Path(os.environ.get('CODEX_HOME', Path.home()/'.codex'))/'sessions'),
+        ('claude', Path(os.environ.get('CLAUDE_CONFIG_DIR', Path.home()/'.claude'))/'projects'),
+        ('pi', Path(os.environ.get('PI_CODING_AGENT_DIR', Path.home()/'.pi/agent'))/'sessions'),
+        ('omp', Path(os.environ.get('OMP_AGENT_DIR', Path.home()/'.omp/agent'))/'sessions'),
+    ]
+    rows, errors = [], []
+    for adapter, path in candidates:
+        if path.is_dir():
+            try:
+                rows.append(register_source(store, str(path), adapter))
+            except (Invalid, OSError) as exc:
+                errors.append({'adapter': adapter, 'error': str(exc)})
+    return {'sources': rows, 'errors': errors}
+
+
+def relink_source(store, id, path):
+    """Move a source while retaining its lineage, immutable evidence and labels."""
+    source = store.one('SELECT * FROM sources WHERE id=?', (id,))
+    if not source:
+        raise Invalid('Fuente desconocida.')
+    target = Path(path).expanduser().absolute()
+    if target.is_symlink() or not (target.is_file() or target.is_dir()):
+        raise Invalid('Selecciona una carpeta o archivo existente, sin enlaces simbólicos.')
+    target = target.resolve()
+    if target.name.lower() in EXCLUDED or (target.is_file() and target.suffix.lower() not in EXTENSIONS):
+        raise Invalid('Selecciona conversaciones JSON/JSONL, no configuración ni credenciales.')
+    duplicate = store.one('SELECT id FROM sources WHERE path=? AND id<>?', (str(target), id))
+    if duplicate:
+        raise Invalid('La ruta ya pertenece a otra fuente.')
+    previous = Path(source['path'])
+    sessions = store.rows('SELECT id,path FROM sessions WHERE source_id=?', (id,))
+    # A file source has one identical path; a directory source has child paths.
+    was_file = bool(sessions) and all(Path(row['path']) == previous for row in sessions)
+    if sessions and was_file != target.is_file():
+        raise Invalid('Conserva el tipo de fuente: archivo o carpeta.')
+    with store.transaction():
+        for row in sessions:
+            old_path = Path(row['path'])
+            try:
+                new_path = target if was_file else target / old_path.relative_to(previous)
+            except ValueError:
+                raise Invalid('Una conversación tiene una ruta fuera de esta fuente.') from None
+            store.execute('UPDATE sessions SET path=? WHERE id=?', (str(new_path), row['id']))
+        store.execute('UPDATE sources SET path=?,error=NULL WHERE id=?', (str(target), id))
+        store.execute('DELETE FROM file_marks WHERE path LIKE ?', (id + ':%',))
+        for prefix in ('capture_cursor:', 'capture_recent_attempts:', 'capture_attempt:', 'capture_priority_cycle:'):
+            store.execute('DELETE FROM kv WHERE key=?', (prefix + id,))
+        store.audit('source_relinked', {'source_id': id, 'sessions_preserved': len(sessions)})
+    return store.one('SELECT * FROM sources WHERE id=?', (id,))
+
+
 def _descriptor(value):
     """Retain an attachment descriptor without copying binary payloads."""
     if not isinstance(value, dict):
@@ -560,7 +614,8 @@ def _capture(store, source, path, max_bytes):
     coverage = _display_coverage(events, coverage, coverage.get('source_mtime', st.st_mtime))
     # One file is one lineage; native session IDs remain on every event. This
     # avoids silently replacing one source's evidence with a same-ID copy.
-    session_id = 'session_' + digest([source['id'], str(path.relative_to(Path(source['path'])) if Path(source['path']).is_dir() else path.name)])[:24]
+    existing = store.one('SELECT id FROM sessions WHERE source_id=? AND path=?', (source['id'], str(path)))
+    session_id = existing['id'] if existing else 'session_' + digest([source['id'], str(path.relative_to(Path(source['path'])) if Path(source['path']).is_dir() else path.name)])[:24]
     revision = 'revision_' + digest([session_id, events, coverage])
     title = session_title(events, path.name)
     completion = 'suggested' if any(e.get('completion_suggested') for e in events) else 'unknown'

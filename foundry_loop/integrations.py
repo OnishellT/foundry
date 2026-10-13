@@ -69,7 +69,9 @@ def active_context(store, domain, project=None):
     artifacts = package.get('artifacts', [])
     if not isinstance(artifacts, list) or len(artifacts) != len(expected) or {(a.get('candidate_id'), a.get('variant')) for a in artifacts} != expected:
         raise Invalid('La lista de artefactos del paquete está incompleta o duplicada.')
-    case = {'domain': domain, 'snapshot': js({'project_key': digest(str(project_path)) if project_path else None})}
+    project_key = digest(str(project_path)) if project_path else None
+    project_key = store.get('project_path_aliases', {}).get(project_key, project_key)
+    case = {'domain': domain, 'snapshot': js({'project_key': project_key})}
     for artifact in artifacts:
         candidate, spec = _candidate(store, artifact['candidate_id'])
         if not re.fullmatch(r'candidate_[a-f0-9]+', candidate['id']):

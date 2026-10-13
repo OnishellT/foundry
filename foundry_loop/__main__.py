@@ -107,8 +107,8 @@ def main():
             from .ingest import register_source
             s=Store(root);result={'sources':[]}
             if args.discover:
-                for adapter,path in [('codex',Path(os.environ.get('CODEX_HOME',Path.home()/'.codex'))/'sessions'),('claude',Path.home()/'.claude'/'projects'),('pi',Path.home()/'.pi'/'agent'/'sessions'),('omp',Path.home()/'.omp'/'agent'/'sessions')]:
-                    if path.is_dir():result['sources'].append(register_source(s,str(path),adapter))
+                from .ingest import discover_sources
+                result.update(discover_sources(s))
             if any(value is not None for value in (args.provider,args.agent_command,args.model,args.provider_id,args.reasoning)):
                 from .app import configure
                 cfg=s.get('config');patch={}

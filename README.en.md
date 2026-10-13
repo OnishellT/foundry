@@ -128,6 +128,13 @@ This package preserves Conversation Foundry normalization/redaction modules unde
 
 For a user installation, use `python3 install.py --skills --start`. The `--skills` option copies `foundry-learning-loop` into the skills directories of Codex, Claude Code, Pi and OMP **only if their agent directories already exist**. An ownership marker and hash allow untouched copies to be updated; a foreign skill or one you modified is preserved and reported in the output. Uninstallation removes only unmodified owned copies. `--dry-run --skills` shows destinations without writing. Portable mode keeps the skill inside the package and rejects `--skills` to avoid external path dependencies; you can explicitly install it on each machine through a user installation.
 
+The UI components `ui/src/components/ui/tabs.tsx` and `separator.tsx` retain
+their shadcn/ui `base-nova` origin with a local compatibility adaptation:
+their Tailwind variants query the `data-orientation` attribute emitted by
+Base UI 1.9.0 (`data-[orientation=horizontal|vertical]` and group variants),
+instead of the `data-horizontal`/`data-vertical` boolean attributes that this
+version does not emit. Native component semantics and navigation are preserved.
+
 ### Build the interface
 
 The installed application includes the compiled interface and works without Node, a CDN or external web services. Its source is in `ui/`: React, TypeScript, Tailwind CSS 4 and official shadcn/ui `base-nova` components on Base UI. Exact versions and `bun.lock` make it rebuildable:

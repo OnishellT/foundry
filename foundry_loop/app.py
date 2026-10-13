@@ -110,6 +110,13 @@ class App:
         if not isinstance(body,dict):raise Invalid('Solicitud inválida.')
         action=body.get('action');s=self.store;id=body.get('id')
         if action=='source.add':return register_source(s,body['path'],body.get('adapter','canonical'))
+        if action=='source.discover':
+            from .ingest import discover_sources
+            return discover_sources(s)
+        if action=='source.relink':
+            from .ingest import relink_source
+            with self.capture_lock:
+                return relink_source(s,id,body['path'])
         if action=='source.toggle':
             if type(body['enabled'])is not bool:raise Invalid('enabled debe ser booleano.')
             s.execute('UPDATE sources SET enabled=? WHERE id=?',(body['enabled'],id));return {'ok':True}

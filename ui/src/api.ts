@@ -15,18 +15,24 @@ export type AppState = {
   total_sessions?: number;
 };
 const hash = new URLSearchParams(location.hash.slice(1));
-if (hash.has("token")) {
+if (hash.has("token") && !(window as any).__WORKBENCH__) {
   sessionStorage.setItem("foundry-token", hash.get("token") || "");
   history.replaceState(null, "", location.pathname + location.search);
 }
 export function setToken(token: string) {
   sessionStorage.setItem("foundry-token", token);
 }
+export function apiFetch(path: string, init: RequestInit = {}) {
+  const unified = Boolean((window as any).__WORKBENCH__);
+  return fetch(unified ? path.replace(/^\/api\//, "/api/foundry/") : path, {
+    ...init,
+    headers: { ...(!unified ? { "X-Foundry-Token": sessionStorage.getItem("foundry-token") || "" } : {}), ...init.headers },
+  });
+}
 export async function api(path: string, body?: Row) {
-  const response = await fetch(path, {
+  const response = await apiFetch(path, {
     method: body ? "POST" : "GET",
     headers: {
-      "X-Foundry-Token": sessionStorage.getItem("foundry-token") || "",
       ...(body ? { "Content-Type": "application/json" } : {}),
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
