@@ -1,0 +1,4 @@
+Conversation Foundry Loop extends the independent Conversation Foundry integration.
+Vendored normalization/redaction helpers originate from that project; native parser reference follows Necmttn/ax commit c2aef9b876dcd96d8115f4be4a6b3c0da6d42a77.
+Original AGPL-3.0-only license retained. See VENDOR_PROVENANCE.json.
+Design references: https://github.com/PrimeIntellect-ai/prime-agent and https://github.com/NousResearch/hermes-agent . No Prime or Hermes runtime is bundled.
