@@ -194,23 +194,10 @@ select option {
   margin: auto;
 }
 .page-title {
-  font-size: 27px;
-  letter-spacing: -0.8px;
+  font-size: 24px;
+  letter-spacing: -0.6px;
   font-weight: 650;
   line-height: 1.25;
-}
-.page-description {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.7;
-  max-width: 750px;
-}
-.eyebrow {
-  font-size: 10px;
-  letter-spacing: 1.4px;
-  text-transform: uppercase;
-  color: #a78bfa;
-  font-weight: 600;
 }
 .panel {
   background: var(--card);
@@ -240,7 +227,7 @@ select option {
   font-weight: 650;
   letter-spacing: -1px;
   line-height: 1.2;
-  margin: 14px 0 8px;
+  margin: 10px 0 0;
 }
 .table-wrap {
   overflow: auto;
@@ -379,36 +366,6 @@ select option {
   background: #8b5cf61c;
   color: #c4b5fd;
   border-color: #8b5cf633;
-}
-.task-step {
-  display: flex;
-  gap: 12px;
-  padding: 15px 16px;
-  border: 1px solid var(--border);
-  background: #121217;
-  border-radius: 10px;
-}
-.task-step strong {
-  font-size: 12px;
-  font-weight: 550;
-}
-.task-step p {
-  font-size: 11px;
-  color: #a1a1aa;
-  margin: 5px 0 0;
-  line-height: 1.6;
-}
-.task-number {
-  flex: none;
-  width: 23px;
-  height: 23px;
-  border: 1px solid #8b5cf640;
-  border-radius: 7px;
-  color: #c4b5fd;
-  display: grid;
-  place-items: center;
-  font-size: 10px;
-  background: #8b5cf612;
 }
 .code-block {
   padding: 15px;
@@ -630,12 +587,6 @@ select option {
 .pill {
   font-size: 11px;
 }
-.task-step p {
-  font-size: 12px;
-}
-.task-step strong {
-  font-size: 14px;
-}
 .notice {
   font-size: 13px;
 }
@@ -653,9 +604,6 @@ select option {
   font-size: 12px;
 }
 .form-label {
-  font-size: 14px;
-}
-.page-description {
   font-size: 14px;
 }
 @media (max-width: 800px) {
@@ -710,4 +658,17 @@ select option {
   [data-slot="tabs-trigger"] {
     min-height: 42px;
   }
+}
+
+/* Optional setup stays available without competing with the next action. */
+.disclosure {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.disclosure > summary {
+  padding: 6px 0;
+  font-weight: 500;
+}
+.disclosure[open] > summary {
+  margin-bottom: 12px;
 }

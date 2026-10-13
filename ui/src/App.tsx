@@ -6,21 +6,14 @@ import {
   type FormEvent,
 } from "react";
 import {
-  Activity,
   ArrowDownToLine,
   ArrowLeft,
   ArrowRight,
   ArrowUpRight,
-  BookOpen,
-  Check,
   CheckCheck,
-  CheckCircle2,
   ChevronRight,
-  Circle,
   CircleHelp,
-  Clock3,
   Database,
-  FileCode2,
   FlaskConical,
   FolderOpen,
   GitBranch,
@@ -30,18 +23,13 @@ import {
   Link2,
   Loader2,
   MessageSquare,
-  MoreHorizontal,
-  Pause,
   Plus,
   RefreshCw,
   Search,
   Settings2,
   ShieldCheck,
   Sparkles,
-  SquareTerminal,
-  WandSparkles,
   X,
-  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -55,7 +43,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -159,11 +146,11 @@ function TasksStatus({ task }: { task: Row }) {
   return (
     <div className="btn-wrap">
       <span className={"pill " + (task.completed ? "good" : "warn")}>
-        {task.completed ? "Finalización confirmada" : "Sin completar"}
+        {task.completed ? "Completada" : "Sin completar"}
       </span>
       {task.completed && <Status value={task.label} />}
       {task.proposal && !task.completed && (
-        <span className="pill purple">Borrador del agente</span>
+        <span className="pill purple">Propuesta</span>
       )}
     </div>
   );
@@ -196,25 +183,11 @@ function Panel({
     </Card>
   );
 }
-function Heading({
-  eyebrow,
-  title,
-  description,
-  actions,
-}: {
-  eyebrow: string;
-  title: string;
-  description: string;
-  actions?: ReactNode;
-}) {
+function Heading({ title, actions }: { title: string; actions?: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-5 mb-7">
-      <div>
-        <div className="eyebrow mb-2.5">{eyebrow}</div>
-        <h1 className="page-title mb-2">{title}</h1>
-        <p className="page-description">{description}</p>
-      </div>
-      <div className="btn-wrap">{actions}</div>
+    <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <h1 className="page-title">{title}</h1>
+      {actions && <div className="btn-wrap">{actions}</div>}
     </div>
   );
 }
@@ -254,33 +227,6 @@ function Code({ value }: { value: any }) {
     </pre>
   );
 }
-function Gates() {
-  return (
-    <div className="grid md:grid-cols-3 gap-3 mb-6">
-      {[
-        ["1", "Confirmar finalización", "Tú decides si el trabajo terminó."],
-        [
-          "2",
-          "Valorar el resultado",
-          "Correcto o incorrecto, en un paso separado.",
-        ],
-        [
-          "3",
-          "Adoptar la mejora",
-          "Tras comparar, tú apruebas su incorporación.",
-        ],
-      ].map(([n, t, d]) => (
-        <div className="task-step" key={n}>
-          <span className="task-number">{n}</span>
-          <div>
-            <strong>{t}</strong>
-            <p>{d}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 function Field({
   label,
   name,
@@ -311,6 +257,7 @@ function Field({
             name={name}
             defaultValue={initial}
             required={required}
+            aria-describedby={hint ? id + "-hint" : undefined}
             rows={4}
           />
         ) : (
@@ -321,9 +268,14 @@ function Field({
             step={type === "number" ? "any" : undefined}
             defaultValue={initial}
             required={required}
+            aria-describedby={hint ? id + "-hint" : undefined}
           />
         ))}
-      {hint && <p className="form-help">{hint}</p>}
+      {hint && (
+        <p id={id + "-hint"} className="form-help">
+          {hint}
+        </p>
+      )}
     </div>
   );
 }
@@ -350,6 +302,7 @@ function Choice({
         name={name}
         defaultValue={initial}
         disabled={disabled}
+        aria-describedby={hint ? "field-" + name + "-hint" : undefined}
       >
         {options.map(([value, text]) => (
           <option value={value} key={value}>
@@ -653,9 +606,7 @@ function Dashboard(p: Props) {
   return (
     <>
       <Heading
-        eyebrow="Espacio de trabajo"
-        title="Cada tarea deja una oportunidad."
-        description="Captura la experiencia, confirma el resultado y conserva sólo las mejoras que demuestran su valor."
+        title="Resumen"
         actions={
           <Button onClick={() => open({ kind: "source" })}>
             <Plus />
@@ -669,38 +620,28 @@ function Dashboard(p: Props) {
             MessageSquare,
             "Conversaciones",
             data.total_sessions || data.sessions.length,
-            "Historial conectado",
           ],
           [
             CheckCheck,
             "Tareas completadas",
             data.episodes.filter((e) => e.completed).length,
-            "Confirmadas por ti",
           ],
-          [
-            Sparkles,
-            "Aprendizajes",
-            data.candidates.length,
-            "Propuestas con evidencia",
-          ],
-          [GitBranch, "Mejoras activas", accepted, "Adoptadas manualmente"],
-        ].map(([Icon, label, note, sub]: any) => (
+          [Sparkles, "Aprendizajes", data.candidates.length],
+          [GitBranch, "Mejoras activas", accepted],
+        ].map(([Icon, label, note]: any) => (
           <div className="stat-card" key={label}>
             <div className="flex justify-between items-center muted text-xs">
               {label}
               <Icon size={16} className="text-violet-400" />
             </div>
             <div className="stat-number">{note}</div>
-            <p className="meta">{sub}</p>
           </div>
         ))}
       </div>
-      <Gates />
       <div className="grid xl:grid-cols-[1.6fr_1fr] gap-5">
         <div className="space-y-5">
           <Panel
             title="Conversaciones recientes"
-            caption="Tu trabajo más reciente, listo para organizar."
             action={
               <Button
                 variant="ghost"
@@ -720,8 +661,8 @@ function Dashboard(p: Props) {
               />
             ) : (
               <Empty
-                title="Conecta tu primera conversación"
-                text="Añade una carpeta de sesiones de tus agentes. Puedes habilitar propuestas de tareas con el modelo configurado."
+                title="Sin conversaciones"
+                text="Conecta una carpeta de sesiones para empezar."
                 action={
                   <Button onClick={() => open({ kind: "source" })}>
                     Conectar fuente
@@ -736,13 +677,7 @@ function Dashboard(p: Props) {
                 <FlaskConical />
               </div>
               <div className="flex-1">
-                <h3 className="text-sm font-semibold mb-1">
-                  Explora el ciclo con un ejemplo HTTP
-                </h3>
-                <p className="meta">
-                  Una conversación redactada, snapshots y controles de
-                  persistencia. Las llamadas al modelo se indican por separado.
-                </p>
+                <h3 className="text-sm font-semibold mb-1">Ejemplo HTTP</h3>
               </div>
               <Button
                 variant="outline"
@@ -755,10 +690,7 @@ function Dashboard(p: Props) {
             </div>
           </Panel>
         </div>
-        <Panel
-          title="Actividad del sistema"
-          caption="Trabajos durables y procesos en segundo plano."
-        >
+        <Panel title="Actividad">
           <JobRows data={data} run={run} open={open} />
         </Panel>
       </div>
@@ -824,12 +756,11 @@ function Conversations(p: Props) {
   return (
     <>
       <Heading
-        eyebrow="Del historial a la evidencia"
         title="Conversaciones y tareas"
-        description="El agente propone los objetivos de cada conversación. Revisa sus tareas, confirma cuándo terminaron y valora cada resultado; también puedes delimitar tramos manualmente."
         actions={
           <Button
             variant="outline"
+            disabled={!p.data.config.capture}
             onClick={() => p.run("scan", {}, "Captura solicitada.")}
           >
             <RefreshCw />
@@ -849,8 +780,7 @@ function Conversations(p: Props) {
           </TabsTrigger>
           <TabsTrigger value="tasks">
             <CheckCheck size={14} />
-            Tareas guardadas{" "}
-            <span className="ml-1 opacity-50">{allTasks.length}</span>
+            Tareas <span className="ml-1 opacity-50">{allTasks.length}</span>
           </TabsTrigger>
         </TabsList>
         <TabsContent value="sessions">
@@ -969,19 +899,35 @@ function Conversations(p: Props) {
               </>
             ) : (
               <Empty
-                title="No hay conversaciones con estos filtros"
-                text="Prueba Ayer si acabas de cruzar medianoche. También puedes quitar filtros o volver a capturar las fuentes."
+                title={
+                  data.sessions.length
+                    ? "Sin coincidencias"
+                    : "Sin conversaciones"
+                }
+                text={
+                  data.sessions.length
+                    ? "Prueba otros filtros."
+                    : "Conecta una fuente y captura sus sesiones."
+                }
                 action={
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setQuery("");
-                      setPeriod("all");
-                      setSource("");
-                    }}
-                  >
-                    Quitar filtros
-                  </Button>
+                  data.sessions.length ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setQuery("");
+                        setPeriod("all");
+                        setSource("");
+                      }}
+                    >
+                      Quitar filtros
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => open({ kind: "page", id: "sources" })}
+                    >
+                      Ver fuentes
+                    </Button>
+                  )
                 }
               />
             )}
@@ -1032,7 +978,7 @@ function Conversations(p: Props) {
                     <thead>
                       <tr>
                         <th>Tarea</th>
-                        <th>Decisión humana</th>
+                        <th>Estado</th>
                         <th>Casos</th>
                         <th />
                       </tr>
@@ -1078,8 +1024,8 @@ function Conversations(p: Props) {
               </>
             ) : (
               <Empty
-                title="Cada tarea necesita tu confirmación"
-                text="Abre una conversación y usa Inicio y Fin para guardar un objetivo. Las propuestas automáticas no equivalen a tareas completadas."
+                title="Sin tareas"
+                text="Abre una conversación para proponer o crear tareas."
                 action={
                   <Button variant="outline" onClick={() => setTab("sessions")}>
                     Ver conversaciones
@@ -1098,13 +1044,12 @@ function Sources(p: Props) {
   return (
     <>
       <Heading
-        eyebrow="Ingestión local"
         title="Fuentes conectadas"
-        description="Lee sesiones y conserva su evidencia. Si activas la propuesta automática, el agente configurado analizará conversaciones nuevas o actualizadas."
         actions={
           <>
             <Button
               variant="outline"
+              disabled={!p.data.config.capture}
               onClick={() => p.run("scan", {}, "Captura solicitada.")}
             >
               <RefreshCw />
@@ -1167,7 +1112,7 @@ function Sources(p: Props) {
             ))
           ) : (
             <Empty
-              title="Empieza por una carpeta"
+              title="Sin fuentes"
               text="Admite Codex, Claude Code, Pi, OMP y archivos JSONL canónicos."
               action={
                 <Button onClick={() => p.open({ kind: "source" })}>
@@ -1220,12 +1165,18 @@ function Sources(p: Props) {
               )}
             </div>
           </Panel>
-          <Notice>
-            La captura automática está{" "}
-            <strong>{p.data.config.capture ? "activa" : "pausada"}</strong>. Un
-            cierre detectado sugiere una tarea; tú confirmas su finalización y
-            su resultado.
-          </Notice>
+          {!p.data.config.capture && (
+            <Notice tone="warning">
+              Captura pausada.
+              <Button
+                variant="link"
+                size="sm"
+                onClick={() => p.open({ kind: "page", id: "settings" })}
+              >
+                Activar en Configuración
+              </Button>
+            </Notice>
+          )}
         </div>
       </div>
     </>
@@ -1234,16 +1185,9 @@ function Sources(p: Props) {
 function Learning(p: Props) {
   return (
     <>
-      <Heading
-        eyebrow="Registro de capacidades"
-        title="Aprendizajes con evidencia"
-        description="Skills, reglas y herramientas se activan sólo después de superar una evaluación y recibir tu aprobación."
-      />
+      <Heading title="Aprendizajes" />
       <div className="grid xl:grid-cols-[1.6fr_1fr] gap-5">
-        <Panel
-          title="Propuestas"
-          caption="Un cambio mínimo, una hipótesis verificable."
-        >
+        <Panel title="Propuestas">
           {p.data.candidates.length ? (
             <div>
               {p.data.candidates.map((c) => (
@@ -1279,8 +1223,8 @@ function Learning(p: Props) {
             </div>
           ) : (
             <Empty
-              title="Tu primer aprendizaje empieza en una tarea"
-              text="Completa y valora una tarea para generar una propuesta. Puedes investigar tanto estrategias correctas como fallos que conviene prevenir."
+              title="Sin aprendizajes"
+              text="Completa y valora una tarea para extraer un aprendizaje."
               action={
                 <Button
                   variant="outline"
@@ -1293,10 +1237,7 @@ function Learning(p: Props) {
           )}
         </Panel>
         <div className="space-y-5">
-          <Panel
-            title="Versiones del arnés"
-            caption="La adopción es manual y reversible."
-          >
+          <Panel title="Versiones del arnés">
             {p.data.versions.map((v) => (
               <div
                 key={v.id}
@@ -1332,11 +1273,6 @@ function Learning(p: Props) {
               </div>
             ))}
           </Panel>
-          <Notice>
-            Las tareas correctas generan hipótesis positivas. Las incorrectas
-            originan aprendizaje preventivo. Si no hay mejora demostrada, las
-            propuestas se descartan.
-          </Notice>
         </div>
       </div>
     </>
@@ -1346,9 +1282,7 @@ function Experiments(p: Props) {
   return (
     <>
       <Heading
-        eyebrow="Comparación controlada"
-        title="Primero, la evidencia"
-        description="Baseline y candidato comparten un caso congelado. La procedencia histórica del estado inicial se evalúa por separado."
+        title="Experimentos"
         actions={
           <Button onClick={() => p.open({ kind: "case-create" })}>
             <Plus />
@@ -1404,8 +1338,8 @@ function Experiments(p: Props) {
               </div>
             ) : (
               <Empty
-                title="Todavía no hay comparaciones"
-                text="Prepara casos de origen y transferencia desde un candidato. Los controles comprobarán que el verificador detecta fallos."
+                title="Sin experimentos"
+                text="Abre un aprendizaje para preparar su evaluación."
                 action={
                   <Button
                     variant="outline"
@@ -1451,8 +1385,8 @@ function Experiments(p: Props) {
             ))
           ) : (
             <Empty
-              title="Define qué significa hacerlo bien"
-              text="Crea verificadores observables con un control correcto y otro deliberadamente defectuoso."
+              title="Sin casos"
+              text="Añade un proyecto inicial y sus verificadores."
             />
           )}
         </Panel>
@@ -1476,15 +1410,8 @@ function AgentSettings({ name, config }: { name: string; config: Row }) {
   return (
     <div className="step-section">
       <h3 className="text-sm font-semibold mb-2">
-        {name === "provider"
-          ? "Agente que propone tareas y extrae aprendizajes"
-          : "Agente que ejecuta las comparaciones"}
+        {name === "provider" ? "Agente de análisis" : "Agente de evaluación"}
       </h3>
-      <p className="form-help mb-4">
-        {name === "provider"
-          ? "Un mismo agente analiza la conversación y extrae aprendizaje después de tu valoración."
-          : "Las comparaciones usan este agente sobre snapshots preparados."}
-      </p>
       <div className="grid md:grid-cols-2 gap-4">
         <Field name={name + "_kind"} label="Agente">
           <select
@@ -1520,10 +1447,9 @@ function AgentSettings({ name, config }: { name: string; config: Row }) {
         </Field>
         <Choice
           name={name + "_reasoning"}
-          label="Nivel de razonamiento"
+          label="Razonamiento (Pi)"
           initial={config?.reasoning || "medium"}
           disabled={kind !== "pi"}
-          hint="Este selector sólo se aplica a Pi. No modifica el razonamiento del adaptador Codex o de comandos externos."
           options={[
             ["off", "Desactivado"],
             ["minimal", "Mínimo"],
@@ -1537,11 +1463,7 @@ function AgentSettings({ name, config }: { name: string; config: Row }) {
         <Field
           name={name + "_provider"}
           label="Proveedor de Pi"
-          hint={
-            kind === "pi"
-              ? "Para tu cuenta de Codex: openai-codex. La autenticación se configura en Pi."
-              : "Sólo se utiliza al elegir Pi."
-          }
+          hint={kind === "pi" ? "Autentica tu cuenta en Pi." : undefined}
         >
           <Input
             id={"field-" + name + "_provider"}
@@ -1558,12 +1480,18 @@ function AgentSettings({ name, config }: { name: string; config: Row }) {
           initial={config?.timeout || 180}
         />
       </div>
-      <details className="mt-3">
-        <summary>Comando de ejecución avanzado</summary>
+      <details
+        className="mt-3"
+        open={kind === "command" ? true : undefined}
+        onInvalidCapture={(event) => {
+          event.currentTarget.open = true;
+        }}
+      >
+        <summary>Comando de ejecución</summary>
         <Field
           name={name + "_command"}
           label="Argumentos JSON"
-          hint="Sin shell. No incluyas claves; configura la autenticación del agente en el entorno."
+          hint="Sin shell ni claves. Autentica el agente por separado."
         >
           <Input
             name={name + "_command"}
@@ -1598,13 +1526,9 @@ function Settings(p: Props) {
   ];
   return (
     <>
-      <Heading
-        eyebrow="Entorno y políticas"
-        title="Configuración"
-        description="Controla la captura, el proveedor y el coste de las evaluaciones. La incorporación permanente siempre requiere tu aprobación."
-      />
+      <Heading title="Configuración" />
       <div className="grid xl:grid-cols-[1.6fr_1fr] gap-5">
-        <Panel title="Preferencias del arnés">
+        <Panel title="Preferencias">
           <div className="panel-content">
             <Form
               onSave={async (v, fd) => {
@@ -1651,17 +1575,17 @@ function Settings(p: Props) {
                   [
                     "auto_tasks",
                     "Proponer tareas automáticamente",
-                    "Usa el agente configurado tras un período sin actividad. Se aplica a conversaciones nuevas o actualizadas después de activarlo; el historial anterior se propone desde cada conversación.",
+                    "Conversaciones nuevas o actualizadas · consume cuota.",
                   ],
                   [
                     "auto_derive",
                     "Extraer aprendizajes tras tu valoración",
-                    "Sólo después de confirmar que una tarea terminó y valorar su resultado.",
+                    "Tareas completadas y valoradas · consume cuota.",
                   ],
                   [
                     "auto_evaluate",
                     "Evaluar propuestas automáticamente",
-                    "Puede ejecutar modelos una vez que exista una propuesta y casos válidos.",
+                    "Con casos preparados · consume cuota.",
                   ],
                 ].map(([k, t, h]) => (
                   <label
@@ -1676,33 +1600,32 @@ function Settings(p: Props) {
                   </label>
                 ))}
               </div>
-              <Notice>
-                La adopción automática está deshabilitada. Una mejora demostrada
-                permanece como candidata hasta que tú la incorpores.
-              </Notice>
               {["provider", "replay"].map((k) => (
                 <AgentSettings key={k} name={k} config={c[k]} />
               ))}
-              <div className="grid md:grid-cols-2 gap-4">
-                {numbers.map(([k, l]) => (
-                  <Field
-                    key={k}
-                    name={k}
-                    label={l}
-                    type="number"
-                    initial={c[k] ?? (k === "task_idle_seconds" ? 120 : 0)}
-                    hint={
-                      k === "task_idle_seconds"
-                        ? "Entre 15 y 86400 segundos. La propuesta crea borradores: nunca completa ni valora tareas por ti."
-                        : k === "max_source_bytes"
-                          ? "Máximo admitido: 512 MB (512000000 bytes)."
-                          : k === "max_input_chars"
-                            ? "Cada conversación grande se analiza por bloques; este límite no trunca su evidencia."
-                            : undefined
-                    }
-                  />
-                ))}
-              </div>
+              <details className="disclosure">
+                <summary>Límites de captura y evaluación</summary>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {numbers.map(([k, l]) => (
+                    <Field
+                      key={k}
+                      name={k}
+                      label={l}
+                      type="number"
+                      initial={c[k] ?? (k === "task_idle_seconds" ? 120 : 0)}
+                      hint={
+                        k === "task_idle_seconds"
+                          ? "Entre 15 y 86400 segundos."
+                          : k === "max_source_bytes"
+                            ? "Máximo admitido: 512 MB (512000000 bytes)."
+                            : k === "max_input_chars"
+                              ? "La evidencia completa se reparte en bloques."
+                              : undefined
+                      }
+                    />
+                  ))}
+                </div>
+              </details>
               <Button type="submit">Guardar configuración</Button>
             </Form>
           </div>
@@ -1710,15 +1633,17 @@ function Settings(p: Props) {
         <div className="space-y-5">
           <Panel title="Estado del entorno">
             <div className="panel-content">
-              <Code value={p.data.diagnostics} />
+              <details>
+                <summary>Ver diagnóstico</summary>
+                <Code value={p.data.diagnostics} />
+              </details>
             </div>
           </Panel>
-          <Panel title="Datos y portabilidad">
+          <Panel title="Respaldo">
             <div className="panel-content space-y-4">
-              <p className="text-sm muted leading-6">
-                La copia de la base de datos conserva el registro. Para
-                trasladar el entorno completo, conserva también snapshots,
-                artefactos y configuración del directorio de datos.
+              <p className="form-help">
+                Sólo SQLite. Para un respaldo completo, copia también snapshots
+                y artefactos.
               </p>
               <Button
                 variant="outline"
@@ -1728,7 +1653,7 @@ function Settings(p: Props) {
                 }}
               >
                 <Database />
-                Crear copia de datos
+                Respaldar base de datos
               </Button>
             </div>
           </Panel>
@@ -1819,14 +1744,7 @@ function SessionEditor({ modal, p }: { modal: Modal; p: Props }) {
   return (
     <div className="space-y-5">
       <div className="step-section">
-        <h3 className="text-sm font-semibold mb-2">
-          De la conversación a una lista de tareas
-        </h3>
-        <p className="text-sm muted leading-6 mb-4">
-          El agente puede identificar objetivos y sus tramos por ti. Sus
-          propuestas son borradores: tú confirmas la finalización y valoras cada
-          resultado. La selección manual sigue disponible abajo.
-        </p>
+        <h3 className="text-sm font-semibold mb-2">Proponer tareas</h3>
         <div className="btn-wrap">
           <Button
             disabled={proposalBusy || p.busy}
@@ -1834,7 +1752,7 @@ function SessionEditor({ modal, p }: { modal: Modal; p: Props }) {
               p.run(
                 "session.propose_tasks",
                 { id: s.id, expected_revision: s.revision },
-                "Propuesta de tareas en cola. Puedes seguir trabajando mientras el agente analiza esta revisión.",
+                "Propuesta de tareas en cola.",
               )
             }
           >
@@ -1850,17 +1768,15 @@ function SessionEditor({ modal, p }: { modal: Modal; p: Props }) {
           </Button>
           <span className="meta">
             {p.data.config.provider?.model || "Modelo configurado"} ·{" "}
-            {p.data.config.provider?.reasoning || "medium"}
+            {p.data.config.provider?.reasoning || "medium"} · consume cuota
           </span>
         </div>
-        <p className="form-help mt-3">
-          {p.data.config.auto_tasks
-            ? "Automático para conversaciones nuevas o actualizadas, tras " +
-              (p.data.config.task_idle_seconds ?? 120) +
-              " segundos sin actividad."
-            : "La propuesta automática está pausada. Puedes activarla en Configuración."}{" "}
-          Este botón también permite analizar el historial anterior.
-        </p>
+        {p.data.config.auto_tasks && (
+          <p className="form-help mt-3">
+            Automático tras {p.data.config.task_idle_seconds ?? 120} s sin
+            actividad.
+          </p>
+        )}
         {receipt && (
           <div className="rounded-lg border p-3 mt-4">
             <div className="btn-wrap">
@@ -1899,11 +1815,6 @@ function SessionEditor({ modal, p }: { modal: Modal; p: Props }) {
           </div>
         )}
       </div>
-      <Notice>
-        La revisión visible queda congelada aunque la conversación siga
-        creciendo. Puedes guardar o revisar tareas sin completar ni valorar
-        ninguna automáticamente.
-      </Notice>
       <div className="flex flex-wrap gap-3 items-center">
         <label className="text-xs muted" htmlFor="revision">
           Revisión
@@ -1924,16 +1835,15 @@ function SessionEditor({ modal, p }: { modal: Modal; p: Props }) {
       </div>
       {!s.is_latest && (
         <Notice tone="warning">
-          Estás viendo una revisión histórica. Hay una captura más reciente; las
-          tareas existentes conservan su evidencia original.
+          Revisión histórica. Selecciona otra fecha para ver una captura más
+          reciente.
         </Notice>
       )}
       <div>
         <h3 className="text-sm font-semibold mb-3">Tareas de esta revisión</h3>
         {!s.episodes?.length && (
           <p className="text-sm muted">
-            Todavía no hay tareas. Puedes pedir al agente que las proponga o
-            guardar un tramo manual.
+            Pide una propuesta al agente o crea una tarea manualmente.
           </p>
         )}
       </div>
@@ -1954,176 +1864,183 @@ function SessionEditor({ modal, p }: { modal: Modal; p: Props }) {
       )}
       {s.historical_episode_count > 0 && (
         <p className="meta">
-          Hay {s.historical_episode_count} tareas en otras revisiones; puedes
-          abrirlas con el selector de revisión.
+          {s.historical_episode_count} tareas en otras revisiones.
         </p>
       )}
-      <div className="sticky-selection">
-        <h3 className="text-sm font-semibold mb-3">Ajuste manual (opcional)</h3>
-        <div className="grid sm:grid-cols-[1fr_100px_100px] gap-3 mb-3">
-          <label className="text-xs">
-            Nombre de la tarea
-            <Input
-              className="mt-2"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Por ejemplo, corregir la persistencia"
-            />
-          </label>
-          <label className="text-xs">
-            Inicio
-            <Input
-              className="mt-2"
-              type="number"
-              min={1}
-              max={s.events.length}
-              value={start + 1}
-              onChange={(e) => setStart(Number(e.target.value) - 1)}
-            />
-          </label>
-          <label className="text-xs">
-            Fin
-            <Input
-              className="mt-2"
-              type="number"
-              min={1}
-              max={s.events.length}
-              value={end + 1}
-              onChange={(e) => setEnd(Number(e.target.value) - 1)}
-            />
-          </label>
-        </div>
-        <div className="btn-wrap">
-          <Button
-            disabled={
-              !title.trim() ||
-              start < 0 ||
-              end < start ||
-              end >= s.events.length ||
-              p.busy
-            }
-            onClick={async () => {
-              const r = await p.run(
-                "episode.create",
-                {
-                  session_id: s.id,
-                  first_event: start,
-                  last_event: end,
-                  title: title.trim(),
-                  expected_revision: s.revision,
-                },
-                "Tarea guardada; tú decides cuándo completarla.",
-              );
-              if (r) {
-                setSaved(
-                  r.reused
-                    ? "Se reutilizó la tarea existente conservando su valoración."
-                    : "Tarea guardada. Puedes delimitar otro objetivo.",
-                );
-                setTitle("");
-                setS({
-                  ...s,
-                  episodes: [
-                    ...(s.episodes || []).filter((e: Row) => e.id !== r.id),
-                    episode(r),
-                  ],
-                });
-              }
-            }}
-          >
-            <Plus />
-            Guardar tarea
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setStart(0);
-              setEnd(s.events.length - 1);
-            }}
-          >
-            Toda la conversación
-          </Button>
-          <span className="meta">
-            {Math.max(0, end - start + 1)} eventos seleccionados
-          </span>
-        </div>
-        {saved && (
-          <p className="text-xs text-emerald-300 mt-3" role="status">
-            {saved}
-          </p>
-        )}
-      </div>
-      <label className="flex items-center gap-2 text-xs">
-        <Checkbox
-          checked={human}
-          onCheckedChange={(v) => {
-            setHuman(!!v);
-            setPage(0);
-          }}
-        />
-        Sólo mensajes humanos y del agente
-      </label>
-      <div className="space-y-3">
-        {rows.slice(page * 25, (page + 1) * 25).map((e: Row) => (
-          <article
-            key={e.index}
-            className={
-              "event-box " +
-              (e.index >= start && e.index <= end ? "chosen" : "")
-            }
-          >
-            <div className="flex justify-between items-center gap-3 mb-3">
-              <div className="btn-wrap">
-                <span className="pill">{e.index + 1}</span>
-                <strong className="text-xs">
-                  {e.role || e.type || "Evento"}
-                </strong>
-                <span className="meta">{date(e.timestamp)}</span>
-              </div>
-              <div className="btn-wrap">
-                <Button
-                  variant="outline"
-                  size="xs"
-                  onClick={() => {
-                    setStart(e.index);
-                    if (end < e.index) setEnd(e.index);
-                  }}
-                >
-                  Inicio
-                </Button>
-                <Button
-                  variant="outline"
-                  size="xs"
-                  onClick={() => {
-                    setEnd(e.index);
-                    if (start > e.index) setStart(e.index);
-                  }}
-                >
-                  Fin
-                </Button>
-              </div>
+      <details className="disclosure">
+        <summary>Mensajes y selección manual</summary>
+        <div className="space-y-4 mt-4">
+          <div className="sticky-selection">
+            <div className="grid sm:grid-cols-[1fr_100px_100px] gap-3 mb-3">
+              <label className="text-xs">
+                Nombre de la tarea
+                <Input
+                  className="mt-2"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Por ejemplo, corregir la persistencia"
+                />
+              </label>
+              <label className="text-xs">
+                Inicio
+                <Input
+                  className="mt-2"
+                  type="number"
+                  min={1}
+                  max={s.events.length}
+                  value={start + 1}
+                  onChange={(e) => setStart(Number(e.target.value) - 1)}
+                />
+              </label>
+              <label className="text-xs">
+                Fin
+                <Input
+                  className="mt-2"
+                  type="number"
+                  min={1}
+                  max={s.events.length}
+                  value={end + 1}
+                  onChange={(e) => setEnd(Number(e.target.value) - 1)}
+                />
+              </label>
             </div>
-            <div className="text-xs whitespace-pre-wrap break-words leading-6">
-              {String(
-                e.text || e.content || "Evento de herramienta sin texto.",
-              ).slice(0, 700)}
+            <div className="btn-wrap">
+              <Button
+                disabled={
+                  !title.trim() ||
+                  start < 0 ||
+                  end < start ||
+                  end >= s.events.length ||
+                  p.busy
+                }
+                onClick={async () => {
+                  const r = await p.run(
+                    "episode.create",
+                    {
+                      session_id: s.id,
+                      first_event: start,
+                      last_event: end,
+                      title: title.trim(),
+                      expected_revision: s.revision,
+                    },
+                    "Tarea guardada.",
+                  );
+                  if (r) {
+                    setSaved(
+                      r.reused
+                        ? "La tarea ya existía; se conservó su valoración."
+                        : "Tarea guardada.",
+                    );
+                    setTitle("");
+                    setS({
+                      ...s,
+                      episodes: [
+                        ...(s.episodes || []).filter((e: Row) => e.id !== r.id),
+                        episode(r),
+                      ],
+                    });
+                  }
+                }}
+              >
+                <Plus />
+                Guardar tarea
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setStart(0);
+                  setEnd(s.events.length - 1);
+                }}
+              >
+                Toda la conversación
+              </Button>
+              <span className="meta">
+                {Math.max(0, end - start + 1)} eventos seleccionados
+              </span>
             </div>
-            {String(e.text || "").length > 700 && (
-              <details>
-                <summary>Ver el mensaje</summary>
-                <Code value={e.text} />
-              </details>
-            )}
-            {e.event_text_truncated && (
-              <p className="meta mt-2">
-                Vista abreviada a 4000 caracteres. La evidencia completa
-                permanece guardada.
+            {saved && (
+              <p className="text-xs text-emerald-300 mt-3" role="status">
+                {saved}
               </p>
             )}
-          </article>
-        ))}
-      </div>
-      <Paginator page={page} setPage={setPage} total={rows.length} size={25} />
+          </div>
+          <label className="flex items-center gap-2 text-xs">
+            <Checkbox
+              checked={human}
+              onCheckedChange={(v) => {
+                setHuman(!!v);
+                setPage(0);
+              }}
+            />
+            Sólo mensajes humanos y del agente
+          </label>
+          <div className="space-y-3">
+            {rows.slice(page * 25, (page + 1) * 25).map((e: Row) => (
+              <article
+                key={e.index}
+                className={
+                  "event-box " +
+                  (e.index >= start && e.index <= end ? "chosen" : "")
+                }
+              >
+                <div className="flex justify-between items-center gap-3 mb-3">
+                  <div className="btn-wrap">
+                    <span className="pill">{e.index + 1}</span>
+                    <strong className="text-xs">
+                      {e.role || e.type || "Evento"}
+                    </strong>
+                    <span className="meta">{date(e.timestamp)}</span>
+                  </div>
+                  <div className="btn-wrap">
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      onClick={() => {
+                        setStart(e.index);
+                        if (end < e.index) setEnd(e.index);
+                      }}
+                    >
+                      Inicio
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      onClick={() => {
+                        setEnd(e.index);
+                        if (start > e.index) setStart(e.index);
+                      }}
+                    >
+                      Fin
+                    </Button>
+                  </div>
+                </div>
+                <div className="text-xs whitespace-pre-wrap break-words leading-6">
+                  {String(
+                    e.text || e.content || "Evento de herramienta sin texto.",
+                  ).slice(0, 700)}
+                </div>
+                {String(e.text || "").length > 700 && (
+                  <details>
+                    <summary>Ver el mensaje</summary>
+                    <Code value={e.text} />
+                  </details>
+                )}
+                {e.event_text_truncated && (
+                  <p className="meta mt-2">
+                    Vista abreviada · evidencia completa guardada.
+                  </p>
+                )}
+              </article>
+            ))}
+          </div>
+          <Paginator
+            page={page}
+            setPage={setPage}
+            total={rows.length}
+            size={25}
+          />
+        </div>
+      </details>
     </div>
   );
 }
@@ -2137,6 +2054,7 @@ function TaskEditor({ modal, p }: { modal: Modal; p: Props }) {
     setLocal(task);
   }, [task.completed, task.label, task.origin, task.cases]);
   const linked = p.data.cases.filter((c) => selected.includes(c.id));
+  const canExtract = e.completed && ["correct", "incorrect"].includes(e.label);
   return (
     <div className="space-y-5">
       <TasksStatus task={e} />
@@ -2145,13 +2063,7 @@ function TaskEditor({ modal, p }: { modal: Modal; p: Props }) {
         {String(e.revision).slice(0, 12)}
       </div>
       <div className="step-section">
-        <h3 className="text-sm font-semibold mb-2">
-          1. Confirmar que la tarea terminó
-        </h3>
-        <p className="text-xs muted mb-4">
-          Un cierre detectado sólo es una propuesta. Completar no significa que
-          el resultado sea correcto.
-        </p>
+        <h3 className="text-sm font-semibold mb-2">1. Finalización</h3>
         <Button
           variant={e.completed ? "outline" : "default"}
           onClick={async () => {
@@ -2167,187 +2079,208 @@ function TaskEditor({ modal, p }: { modal: Modal; p: Props }) {
         >
           {e.completed ? "Reabrir tarea" : "Marcar tarea completada"}
         </Button>
+        {e.completed && (
+          <p className="form-help mt-3">
+            Reabrir retira la valoración e invalida la evidencia pendiente.
+          </p>
+        )}
       </div>
       <div className="step-section">
-        <h3 className="text-sm font-semibold mb-2">2. Valorar el resultado</h3>
-        <p className="text-xs muted mb-4">
-          Correcta genera una hipótesis de qué hacer; incorrecta genera una
-          hipótesis preventiva de qué evitar. Ambas requieren evaluación
-          posterior.
-        </p>
+        <h3 className="text-sm font-semibold mb-2">2. Resultado</h3>
         {!e.completed && (
           <Notice tone="warning">
             Confirma primero que la tarea está completada.
           </Notice>
         )}
-        <Form
-          key={e.id + "-" + e.label}
-          onSave={async (v) => {
-            const r = await p.run(
-              "episode.label",
-              { id: e.id, label: v.label, feedback: v.feedback },
-              "Valoración guardada.",
-            );
-            if (r) setLocal({ ...e, label: v.label, feedback: v.feedback });
-          }}
-        >
-          <fieldset disabled={!e.completed} className="field-group">
-            <Choice
-              label="Valoración humana"
-              name="label"
-              initial={e.label}
-              options={[
-                ["pending", "Pendiente de valoración"],
-                ["correct", "Correcta"],
-                ["incorrect", "Incorrecta"],
-              ]}
-            />
-            <Field
-              name="feedback"
-              label="Qué funcionó o qué falló"
-              initial={e.feedback || ""}
-              type="textarea"
-              hint="Describe evidencia observable y el resultado esperado."
-            />
-            <Button type="submit" variant="outline">
-              Guardar valoración
-            </Button>
-          </fieldset>
-        </Form>
-      </div>
-      <div className="step-section">
-        <h3 className="text-sm font-semibold mb-3">
-          Casos para la comparación
-        </h3>
-        <p className="text-xs muted mb-4">
-          Vincula un caso de origen y otro de transferencia. Sus verificadores y
-          controles se congelan fuera del espacio del agente.
-        </p>
-        <div className="space-y-3 mb-4">
-          {p.data.cases.map((c) => (
-            <label className="flex items-start gap-3 text-xs" key={c.id}>
-              <Checkbox
-                checked={selected.includes(c.id)}
-                onCheckedChange={(v) =>
-                  setSelected(
-                    v
-                      ? [...selected, c.id]
-                      : selected.filter((id) => id !== c.id),
-                  )
-                }
-              />
-              <span>
-                {c.title}
-                <span className="meta block">
-                  {c.domain} · {term(c.split)}
-                </span>
-              </span>
-            </label>
-          ))}
-        </div>
-        <div className="btn-wrap">
-          <Button
-            variant="outline"
-            onClick={async () => {
+        {e.completed && (
+          <Form
+            key={e.id + "-" + e.label}
+            onSave={async (v) => {
               const r = await p.run(
-                "episode.cases",
-                { id: e.id, case_ids: selected },
-                "Casos vinculados.",
+                "episode.label",
+                { id: e.id, label: v.label, feedback: v.feedback },
+                "Valoración guardada.",
               );
-              if (r) setLocal({ ...e, cases: selected });
+              if (r) setLocal({ ...e, label: v.label, feedback: v.feedback });
             }}
           >
-            Guardar selección
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => p.open({ kind: "case-create", task: e })}
-          >
-            <Plus />
-            Crear caso para esta tarea
-          </Button>
-        </div>
-      </div>
-      <div className="step-section">
-        <h3 className="text-sm font-semibold mb-3">
-          Estado inicial para la evaluación
-        </h3>
-        {e.origin ? (
-          <Notice tone="success">
-            Origen vinculado ·{" "}
-            {e.origin.provenance === "system_recorded"
-              ? "Registrado antes de ejecutar la tarea"
-              : "Confirmación humana del estado inicial"}
-            . {e.origin.note}
-          </Notice>
-        ) : (
-          <Notice tone="warning">
-            Sin un origen vinculado puedes medir un caso reconstruido, pero no
-            adoptar la mejora como reproducción de esta tarea.
-          </Notice>
+            <fieldset disabled={!e.completed} className="field-group">
+              <Choice
+                label="Valoración"
+                name="label"
+                initial={e.label}
+                options={[
+                  ["pending", "Pendiente de valoración"],
+                  ["correct", "Correcta"],
+                  ["incorrect", "Incorrecta"],
+                ]}
+              />
+              <Field
+                name="feedback"
+                label="Qué funcionó o qué falló"
+                initial={e.feedback || ""}
+                type="textarea"
+                hint="Incluye el resultado esperado si hubo un fallo."
+              />
+              {p.data.config.auto_derive && (
+                <p className="form-help">
+                  Guardar una valoración correcta o incorrecta inicia la
+                  extracción y consume cuota.
+                </p>
+              )}
+              <Button type="submit" variant="outline">
+                Guardar valoración
+              </Button>
+            </fieldset>
+          </Form>
         )}
-        <Form
-          onSave={async (v, fd) => {
-            if (!fd.has("confirmed"))
-              throw Error("Debes confirmar expresamente el estado inicial.");
-            const r = await p.run(
-              "episode.origin",
-              {
-                id: e.id,
-                case_id: v.case_id,
-                confirmed_initial_state: true,
-                note: v.note,
-              },
-              "Origen vinculado con tu confirmación.",
-            );
-            if (r) setLocal({ ...e, origin: r.origin || r });
-          }}
-        >
-          <Choice
-            name="case_id"
-            label="Caso de origen vinculado"
-            options={linked
-              .filter((c) => c.split === "origin")
-              .map((c) => [c.id, c.title])}
-          />
-          <Field
-            name="note"
-            label="Cómo sabes que es el estado inicial"
-            type="textarea"
-            required
-            hint="Por ejemplo, commit previo, copia conservada o registro de ejecución."
-          />
-          <label className="text-xs flex gap-3 items-start">
-            <Checkbox name="confirmed" />
-            Confirmo que este snapshot corresponde al estado inicial de esta
-            tarea. Es mi declaración, no una prueba automática.
-          </label>
-          <Button
-            type="submit"
-            variant="outline"
-            disabled={!linked.some((c) => c.split === "origin")}
-          >
-            Vincular origen confirmado
-          </Button>
-        </Form>
       </div>
-      {p.data.config.auto_derive && (
-        <Notice>
-          La extracción se inicia automáticamente después de confirmar la
-          finalización y guardar una valoración correcta o incorrecta. El botón
-          permite solicitarla de nuevo si hace falta.
-        </Notice>
+      <details className="disclosure" open={canExtract ? true : undefined}>
+        <summary>Casos de evaluación · {selected.length}</summary>
+        <div className="space-y-4 mt-4">
+          <div>
+            <div className="space-y-3 mb-4">
+              {p.data.cases.map((c) => (
+                <label className="flex items-start gap-3 text-xs" key={c.id}>
+                  <Checkbox
+                    checked={selected.includes(c.id)}
+                    onCheckedChange={(v) =>
+                      setSelected(
+                        v
+                          ? [...selected, c.id]
+                          : selected.filter((id) => id !== c.id),
+                      )
+                    }
+                  />
+                  <span>
+                    {c.title}
+                    <span className="meta block">
+                      {c.domain} · {term(c.split)}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+            <div className="btn-wrap">
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  const r = await p.run(
+                    "episode.cases",
+                    { id: e.id, case_ids: selected },
+                    "Casos vinculados.",
+                  );
+                  if (r) setLocal({ ...e, cases: selected });
+                }}
+              >
+                Guardar selección
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => p.open({ kind: "case-create", task: e })}
+              >
+                <Plus />
+                Crear caso para esta tarea
+              </Button>
+            </div>
+          </div>
+          <details
+            className="disclosure"
+            open={
+              linked.some((c) => c.split === "origin") && !e.origin
+                ? true
+                : undefined
+            }
+          >
+            <summary>
+              Estado inicial {e.origin ? "· vinculado" : "· sin confirmar"}
+            </summary>
+            <div className="field-group mt-4">
+              {e.origin ? (
+                <Notice tone="success">
+                  Origen vinculado ·{" "}
+                  {e.origin.provenance === "system_recorded"
+                    ? "Registrado antes de ejecutar la tarea"
+                    : "Confirmación humana del estado inicial"}
+                  . {e.origin.note}
+                </Notice>
+              ) : (
+                <Notice tone="warning">
+                  Confirma el estado inicial para poder adoptar una mejora
+                  evaluada.
+                </Notice>
+              )}
+              <Form
+                onSave={async (v, fd) => {
+                  if (!fd.has("confirmed"))
+                    throw Error(
+                      "Debes confirmar expresamente el estado inicial.",
+                    );
+                  const r = await p.run(
+                    "episode.origin",
+                    {
+                      id: e.id,
+                      case_id: v.case_id,
+                      confirmed_initial_state: true,
+                      note: v.note,
+                    },
+                    "Origen vinculado con tu confirmación.",
+                  );
+                  if (r) setLocal({ ...e, origin: r.origin || r });
+                }}
+              >
+                <Choice
+                  name="case_id"
+                  label="Caso de origen vinculado"
+                  options={linked
+                    .filter((c) => c.split === "origin")
+                    .map((c) => [c.id, c.title])}
+                />
+                <Field
+                  name="note"
+                  label="Cómo sabes que es el estado inicial"
+                  type="textarea"
+                  required
+                  hint="Por ejemplo, commit previo, copia conservada o registro de ejecución."
+                />
+                <label className="text-xs flex gap-3 items-start">
+                  <Checkbox name="confirmed" />
+                  Confirmo que este snapshot corresponde al estado inicial de
+                  esta tarea. Es mi declaración, no una prueba automática.
+                </label>
+                <Button
+                  type="submit"
+                  variant="outline"
+                  disabled={!linked.some((c) => c.split === "origin")}
+                >
+                  Vincular origen confirmado
+                </Button>
+              </Form>
+            </div>
+          </details>
+        </div>
+      </details>
+      {canExtract && (
+        <p className="form-help">
+          Extraer aprendizaje usa el modelo configurado y consume cuota.
+        </p>
       )}
       <div className="btn-wrap">
-        <Button
-          disabled={!e.completed || !["correct", "incorrect"].includes(e.label)}
-          onClick={() =>
-            p.run("derive", { id: e.id }, "Extracción de aprendizaje en cola.")
-          }
-        >
-          <Sparkles />
-          Extraer aprendizaje {e.label === "incorrect" ? "preventivo" : ""}
-        </Button>
+        {canExtract && (
+          <Button
+            disabled={p.busy}
+            onClick={() =>
+              p.run(
+                "derive",
+                { id: e.id },
+                "Extracción de aprendizaje en cola.",
+              )
+            }
+          >
+            <Sparkles />
+            Extraer aprendizaje {e.label === "incorrect" ? "preventivo" : ""}
+          </Button>
+        )}
         <Button
           variant="outline"
           onClick={() =>
@@ -2373,11 +2306,8 @@ function CaseForm({
   const setup = modal.readiness?.setup || {};
   return (
     <div className="space-y-5">
-      <Notice>
-        Un caso congela el proyecto inicial y un verificador externo. El control
-        positivo debe producir un resultado válido; el negativo debe introducir
-        un fallo que el mismo verificador detecte. Se ejecutan desde una copia
-        temporal; limita tus comandos a {"{workspace}"}.
+      <Notice tone="warning">
+        Los controles ejecutan comandos locales. Limítalos a {"{workspace}"}.
       </Notice>
       {task && (
         <p className="text-sm">
@@ -2420,7 +2350,6 @@ function CaseForm({
           label="Instrucción de la tarea"
           type="textarea"
           required
-          hint="El agente resolverá esta instrucción a partir de la copia inicial."
         />
         <div className="grid md:grid-cols-2 gap-4">
           <Field
@@ -2433,7 +2362,6 @@ function CaseForm({
             name="verifier_path"
             label="Directorio externo del verificador"
             required
-            hint="Se copia fuera del espacio que puede modificar el agente."
           />
           <Field name="ref" label="Referencia Git inicial (opcional)" />
           <Field
@@ -2463,21 +2391,20 @@ function CaseForm({
           name="positive_control"
           label="Control positivo · argumentos JSON"
           initial=""
-          hint="Opcional si el snapshot inicial ya pasa. Si falla, proporciona el comando que prepara un resultado conocido como correcto."
+          hint="Prepara una solución correcta. Opcional si el estado inicial ya pasa."
         />
         <Field
           name="negative_control"
           label="Control negativo · argumentos JSON"
+          hint="Introduce un fallo que el verificador debe rechazar."
           initial={
             '["{python}", "{verifier}/introduce_fault.py", "{workspace}"]'
           }
           required
         />
         <p className="form-help">
-          Arrays JSON de argumentos, sin shell. Los marcadores {"{python}"},{" "}
-          {"{workspace}"} y {"{verifier}"} se sustituyen al ejecutar. Los
-          nombres de scripts son ejemplos: usa verificadores reales de tu
-          proyecto.
+          Argumentos JSON, sin shell. Sustituye los scripts de ejemplo por los
+          de tu proyecto.
         </p>
         <Button type="submit">
           <ShieldCheck />
@@ -2555,8 +2482,7 @@ function CandidateEditor({ modal, p }: { modal: Modal; p: Props }) {
       </p>
       {preventive && (
         <Notice>
-          Esta tarea fue incorrecta: se evaluará la formulación preventiva. La
-          positiva queda disponible como contexto de la propuesta.
+          Se evaluará la formulación preventiva porque la tarea fue incorrecta.
         </Notice>
       )}
       <Tabs defaultValue={preventive ? "preventive" : "positive"}>
@@ -2586,9 +2512,6 @@ function CandidateEditor({ modal, p }: { modal: Modal; p: Props }) {
         <div className="flex items-center justify-between gap-3 mb-3">
           <div>
             <h3 className="text-sm font-semibold">Preparar evaluación</h3>
-            <p className="form-help">
-              Vincula casos compatibles antes de consumir llamadas.
-            </p>
           </div>
           <Button size="sm" variant="ghost" disabled={loading} onClick={load}>
             <RefreshCw className={loading ? "animate-spin" : ""} />
@@ -2603,8 +2526,8 @@ function CandidateEditor({ modal, p }: { modal: Modal; p: Props }) {
             <>
               <Notice tone={readiness.ready ? "success" : "warning"}>
                 {readiness.ready
-                  ? "La comparación puede ejecutarse. La adopción necesita evidencia suficiente y tu aprobación."
-                  : "Completa los requisitos indicados para preparar la evaluación."}
+                  ? "Lista para evaluar."
+                  : "Preparación pendiente."}
               </Notice>
               {readiness.blockers.map((b: Row, n: number) => (
                 <div className="readiness-row" key={n}>
@@ -2711,8 +2634,7 @@ function CandidateEditor({ modal, p }: { modal: Modal; p: Props }) {
                 </div>
               ) : (
                 <p className="text-xs muted mb-4">
-                  Crea un caso original y otro distinto para comprobar
-                  transferencia.
+                  Crea un caso de origen y otro de transferencia.
                 </p>
               )}
               <div className="btn-wrap mb-4">
@@ -2774,8 +2696,11 @@ function CandidateEditor({ modal, p }: { modal: Modal; p: Props }) {
                   )}
                 </Notice>
               )}
+              <p className="form-help mt-4">
+                Esta comparación ejecuta el agente y consume cuota.
+              </p>
               <Button
-                className="mt-4"
+                className="mt-2"
                 disabled={!readiness.ready || p.busy}
                 onClick={async () => {
                   const r = await p.run("candidate.evaluate", { id: c.id });
@@ -2815,7 +2740,7 @@ function CandidateEditor({ modal, p }: { modal: Modal; p: Props }) {
             <Choice
               name="scope"
               label="Alcance"
-              initial={term(c.spec.scope)}
+              initial={c.spec.scope}
               options={[
                 ["project", "Proyecto"],
                 ["domain", "Dominio"],
@@ -2888,9 +2813,8 @@ function ExperimentDetail({ modal, p }: { modal: Modal; p: Props }) {
       </div>
       {synthetic && (
         <Notice tone="warning">
-          Este informe incluye ejecuciones marcadas sin inferencia real. Sus
-          resultados sirven para comprobar el protocolo; no demuestran una
-          mejora de un modelo.
+          Ejecución sintética: estos resultados no demuestran una mejora del
+          modelo.
         </Notice>
       )}
       <div className="btn-wrap">
@@ -2907,10 +2831,10 @@ function ExperimentDetail({ modal, p }: { modal: Modal; p: Props }) {
         tone={r.replay_provenance?.promotion_eligible ? "success" : "warning"}
       >
         {r.replay_provenance?.historical_fidelity === "system_recorded"
-          ? "El sistema registró el estado antes de iniciar la tarea."
+          ? "Estado inicial registrado por el sistema."
           : r.replay_provenance?.historical_fidelity === "human_attested"
-            ? "Estado inicial confirmado por una persona; no es una prueba automática de identidad histórica."
-            : "Condiciones reconstruidas: falta evidencia del estado inicial histórico. No acredita una reproducción idéntica."}{" "}
+            ? "Estado inicial confirmado por una persona, sin verificación automática."
+            : "Caso reconstruido: sin evidencia del estado inicial histórico."}{" "}
         {r.replay_provenance?.reason}
       </Notice>
       {r.attempts?.map((a: Row, i: number) => (
@@ -2940,8 +2864,7 @@ function ExperimentDetail({ modal, p }: { modal: Modal; p: Props }) {
               ))}
             </div>
             <p className="form-help mt-3">
-              Relaciones candidato / baseline: menor que 1 implica menos
-              consumo. Calidad y regresiones tienen prioridad.
+              Relación candidato / baseline: menos de 1 indica menor consumo.
             </p>
             {a.summary?.reasons?.map((reason: string, n: number) => (
               <p className="notice warning mt-3" key={n}>
@@ -2956,12 +2879,10 @@ function ExperimentDetail({ modal, p }: { modal: Modal; p: Props }) {
         </Panel>
       ))}
       <div className="step-section">
-        <h3 className="text-sm font-semibold mb-3">
-          3. Incorporar manualmente al arnés
-        </h3>
+        <h3 className="text-sm font-semibold mb-3">3. Adoptar mejora</h3>
         <p className="text-xs muted mb-4">
-          Superar la comparación no activa el cambio. Incorporarlo crea una
-          versión reversible con esta evidencia.
+          Tu aprobación activa esta mejora. Puedes restaurar una versión
+          anterior.
         </p>
         <Button
           disabled={!eligible || active(p.data, e.candidate_id) || p.busy}
@@ -2980,8 +2901,7 @@ function ExperimentDetail({ modal, p }: { modal: Modal; p: Props }) {
         </Button>
         {!eligible && (
           <p className="form-help mt-3">
-            Se requiere mejora demostrada, variante seleccionada y procedencia
-            válida del origen.
+            Adopción bloqueada. Revisa los motivos y el estado inicial.
           </p>
         )}
       </div>
@@ -2990,7 +2910,7 @@ function ExperimentDetail({ modal, p }: { modal: Modal; p: Props }) {
           variant="outline"
           onClick={() => p.open({ kind: "candidate", row: c })}
         >
-          Revisar aprendizaje y preparación
+          Revisar aprendizaje
         </Button>
       )}
       <details>
@@ -3046,10 +2966,6 @@ function ModalBody({
           if (r) close();
         }}
       >
-        <Notice>
-          Selecciona un directorio local de sesiones o un archivo. Los mensajes
-          se conservan como evidencia, nunca como instrucciones ejecutables.
-        </Notice>
         <Choice
           name="adapter"
           label="Formato del agente"
@@ -3062,7 +2978,7 @@ function ModalBody({
           name="path"
           label="Ruta local"
           required
-          hint="Directorio de sesiones en el equipo que ejecuta Foundry."
+          hint="Carpeta de sesiones o archivo JSONL en este equipo."
         />
         <Button type="submit">
           <Link2 />
@@ -3138,7 +3054,7 @@ export default function App() {
           (c) => c.id === r.readiness.candidate_id,
         );
         setNotice({
-          text: "Preparación pendiente: resuelve los requisitos antes de evaluar.",
+          text: "Completa la preparación antes de evaluar.",
           warning: true,
         });
         if (candidate)
@@ -3149,7 +3065,7 @@ export default function App() {
           });
       } else if (action === "episode.label" && r.job_id) {
         setNotice({
-          text: "Valoración guardada. La extracción automática de aprendizaje está en cola; consulta su progreso en Actividad o Experimentos.",
+          text: "Valoración guardada · extracción en cola.",
         });
       } else if (message) setNotice({ text: message });
       return r;
@@ -3188,11 +3104,9 @@ export default function App() {
             <div className="text-sm font-semibold tracking-tight">
               Conversation Foundry
             </div>
-            <div className="meta">Aprendizaje del arnés</div>
           </div>
         </div>
         <nav>
-          <div className="nav-label">Espacio de trabajo</div>
           {nav.map(([id, label, Icon]) => (
             <button
               key={id}
@@ -3209,15 +3123,6 @@ export default function App() {
           ))}
         </nav>
         <div className="sidebar-footer mt-auto p-5">
-          <div className="rounded-xl border p-4 bg-[#15151b]">
-            <div className="flex gap-2 items-center mb-2 text-xs">
-              <ShieldCheck size={15} className="text-violet-400" />
-              Tú decides qué permanece
-            </div>
-            <p className="meta">
-              Finalización, valoración y adopción son decisiones humanas.
-            </p>
-          </div>
           <div className="flex items-center justify-between mt-5 text-xs muted">
             <span className="flex gap-2 items-center">
               <span className="pending-dot" />
@@ -3257,8 +3162,7 @@ export default function App() {
               <Panel title="Conecta tu sesión local">
                 <div className="panel-content">
                   <Notice>
-                    Abre la dirección con token que muestra el inicio o
-                    introduce el token local.
+                    Ejecuta conversation-foundry open o introduce tu token.
                   </Notice>
                   <Form
                     onSave={async (v) => {
@@ -3284,11 +3188,7 @@ export default function App() {
             </div>
           ) : !data ? (
             <>
-              <Heading
-                eyebrow="Entorno local"
-                title="Conectando con Foundry"
-                description="Cargando fuentes, tareas y versiones del arnés."
-              />
+              <Heading title="Conectando…" />
               {error ? (
                 <Notice tone="error">
                   {error}
@@ -3329,9 +3229,6 @@ export default function App() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>
-              Datos locales, revisiones conservadas y decisiones explícitas.
-            </DialogDescription>
           </DialogHeader>
           <div
             className="modal-body"
