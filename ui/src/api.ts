@@ -51,13 +51,21 @@ export async function api(path: string, body?: Row) {
     });
   return value;
 }
-export const date = (v: any) =>
-  v
-    ? new Date(Number(v) * 1000).toLocaleString("es", {
-        dateStyle: "medium",
-        timeStyle: "short",
-      })
+export function date(value: unknown) {
+  if (typeof value !== "number" && typeof value !== "string") return "—";
+  const text = typeof value === "string" ? value.trim() : "";
+  if (typeof value === "string" && !text) return "—";
+  const numeric = typeof value === "number" || /^-?\d+(?:\.\d+)?$/.test(text);
+  const epoch = numeric ? Number(value) : NaN;
+  const timestamp = numeric
+    ? epoch > 100_000_000_000 ? epoch : epoch * 1000
+    : Date.parse(text);
+  if (!Number.isFinite(timestamp) || timestamp <= 0) return "—";
+  const instant = new Date(timestamp);
+  return Number.isFinite(instant.getTime())
+    ? instant.toLocaleString("es", { dateStyle: "medium", timeStyle: "short" })
     : "—";
+}
 export const pretty = (v: any) => JSON.stringify(v, null, 2);
 export function argv(v: string) {
   let parsed;

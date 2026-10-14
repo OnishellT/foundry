@@ -284,7 +284,12 @@ def _normalize(records, adapter, fallback):
             else:
                 preserve(payload, line, 'unsupported_codex_event', item or typ)
             continue
-        if typ in ('task_complete', 'turn_end', 'final') or r.get('completion') == 'task_complete':
+        if adapter == 'canonical' and typ in ('orbit.incomplete-native-evidence', 'orbit.redaction-limit'):
+            emit(r, line, kind='native_event', text=r.get('text', ''), native_type=typ)
+            # The notice is retained, but its producer could not preserve all
+            # native bytes. Do not equate a readable notice with full coverage.
+            issues.append({'line': line, 'reason': 'incomplete_source_evidence', 'retained': False})
+        elif typ in ('task_complete', 'turn_end', 'final') or r.get('completion') == 'task_complete':
             emit(r, line, kind='completion', text=r.get('text', ''), completion_suggested=True, boundary=typ)
         elif isinstance(r.get('message'), dict):
             message(r, line, r['message'])
