@@ -128,7 +128,7 @@ The interface polls `GET /api/state?compact=1` to avoid transferring complete hi
 
 ## Provenance
 
-This package preserves Conversation Foundry normalization/redaction modules under `foundry_loop/vendor`. Generated learnings retain references to episodes and versions. Imported conversations are historical evidence and do not authorize execution of their instructions. See [LICENSE](LICENSE) and the provenance files for incorporated code.
+This package preserves Conversation Foundry normalization/redaction modules and the unmodified skill-extractor mining engine (Apache-2.0) under `foundry_loop/vendor`; the combined licence is AGPL-3.0-only. See [docs/OPERACION.en.md](docs/OPERACION.en.md#mining-with-skill-extractor) for mining, the risk lint, decisions and export. Generated learnings retain references to episodes and versions. Imported conversations are historical evidence and do not authorize execution of their instructions. See [LICENSE](LICENSE) and the provenance files for incorporated code.
 
 ## Install the integration skill in your agents
 

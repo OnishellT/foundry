@@ -97,18 +97,21 @@ La skill de integración distribuida con Foundry indica al agente que consulte e
 En Aprendizajes puedes ajustar dominio y alcance de un candidato propuesto o cuya evidencia esté desactualizada. El cambio invalida resultados anteriores; vuelve a evaluar antes de promover. Una etiqueta general no sustituye la evidencia de transferencia entre dominios.
 
 
-## Conversaciones largas y límites
+## Minería con skill-extractor
 
-La extracción procesa todos los caracteres normalizados del episodio seleccionado,
-incluidos metadatos, en bloques cuando supera `max_input_chars`. Cada observación
-cita su bloque y conserva índices originales. Una segunda llamada sintetiza todas
-las observaciones. Los checkpoints y sus hashes permiten reanudar sin repetir
-bloques completados. Si las observaciones exceden el contexto o se agota el
-presupuesto, el trabajo falla explícitamente y conserva evidencia; nunca trunca
-silenciosamente. La cobertura de entrada no garantiza comprensión semántica.
-Fuentes parcialmente normalizadas no son aptas para extracción hasta resolver
-la cobertura. Los adjuntos son referencias inertes, no se ejecutan ni se leen
-automáticamente sus contenidos binarios.
+La extracción usa el motor de [skill-extractor](https://github.com/surenode-ai/skill-extractor) (Apache-2.0, vendido sin cambios en `foundry_loop/vendor/skill_extractor`) a través de su API de biblioteca: Foundry traduce el rango de eventos de la tarea al formato canónico del extractor, el extractor reconstruye, renderiza, redacta y puntúa, y `foundry_loop/miner.py` devuelve cada skill minada al contrato de candidato validado (`learning.validate_spec`). Foundry conserva la llamada al proveedor, el presupuesto, la vinculación a la revisión, los cercos de etiqueta y la validación de esquema. El proveedor recibe el prompt del minero con un contrato adicional: sólo un objeto `{"skills": [...]}`, citas verbatim como evidencia y una formulación preventiva. Toda cita que no aparezca dentro del rango de eventos de la tarea se rechaza como evidencia fabricada o descartada; un candidato cuyas citas no resuelven no se guarda.
+
+Cada candidato conserva `category` (technique, workflow, preference, guardrail, automation, domain), `trace_outcome`, `confidence`, `utility`, `evidence_range`, el recibo `analysis_coverage` y `risk`: los hallazgos del lint de riesgo del extractor (por ejemplo `pipe-to-shell` o `credential-access`). Un candidato con hallazgos queda bloqueado para evaluar y adoptar hasta que un humano los reconozca con `candidate.acknowledge_risk` (`id`, `acknowledged: true`, `note`). El reconocimiento se guarda fuera de la especificación, con su propio registro de auditoría.
+
+Las decisiones humanas (`candidate.promote` con `comment` opcional y `candidate.reject` con `comment`) se guardan en la tabla `decisions`, que SQLite protege con disparadores contra modificaciones y borrados. Antes de cada minería, Foundry refleja candidatos y decisiones en `miner/candidates.jsonl` y `miner/decisions.jsonl` (los archivos de estado documentados por skill-extractor) y calcula con sus funciones el bloque de calibración y los priores. Una decisión reciente aparece en el siguiente prompt con su motivo; su influencia en las puntuaciones está acotada al 5 % por decisión y al 30 % en total. No se entrena ningún modelo ni se contacta un servicio.
+
+La evidencia renderizada se envía en un único segmento. Si supera `max_input_chars`, el trabajo falla con un mensaje explícito y no trunca ni omite nada; los mensajes que exceden los límites por mensaje del extractor aparecen en `analysis_coverage.truncated_events`. Cobertura de entrada no equivale a comprensión semántica. Las fuentes parcialmente normalizadas no son aptas para extracción hasta resolver la cobertura. Los adjuntos son referencias inertes.
+
+## Exportar, inspeccionar e importar
+
+`conversation-foundry export --id CANDIDATO` genera `exports/<id>.zip` con `manifest.json`, `review.json`, `skill/<name>/SKILL.md` (formato Agent Skills) y las formulaciones. Antes de salir del almacén se aplica el paso **generalizar**: las rutas del proyecto, el directorio personal, el usuario y el host se sustituyen por `{project}`, `~`, `{user}` y `{host}`; se eliminan los campos privados del minero y del proveedor, y las citas de evidencia se conservan sólo como hashes. `review.json` enumera cada sustitución y las herramientas que la skill espera. El manifiesto declara el estado del gate: exportar no aprueba.
+
+`conversation-foundry inspect PAQUETE` muestra el manifiesto sin instalar. `conversation-foundry import PAQUETE --project RUTA` verifica los hashes de cada archivo declarado, rechaza archivos no declarados, aplica el paso **personalizar** (sustituye los marcadores por las rutas de este equipo y lista las herramientas ausentes en `PATH`), exige `--acknowledge-risk` cuando el paquete tiene hallazgos y escribe `.agents/skills/<name>/` sin sobrescribir nunca una carpeta existente. Una skill importada es una carpeta no administrada: su estado de gate procede de otro almacén y no cuenta como adopción local. La distribución de versiones adoptadas sigue siendo `sync`, con sus carpetas administradas y el bloque marcado de AGENTS.md.
 
 ## Cliente persistente y trabajo en vivo
 

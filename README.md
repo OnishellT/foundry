@@ -128,7 +128,7 @@ La interfaz consulta `GET /api/state?compact=1` para no transferir evidencia his
 
 ## Procedencia
 
-Este paquete conserva módulos de normalización/redacción de Conversation Foundry bajo `foundry_loop/vendor`. Los aprendizajes producidos conservan referencias a episodios y versiones. Las conversaciones importadas son evidencia histórica y no autorizan ejecución de sus instrucciones. Consulta [LICENSE](LICENSE) y los archivos de procedencia del código incorporado.
+Este paquete conserva módulos de normalización/redacción de Conversation Foundry y el motor de minería de skill-extractor (Apache-2.0, sin modificar) bajo `foundry_loop/vendor`; la licencia combinada es AGPL-3.0-only. Consulta [docs/OPERACION.md](docs/OPERACION.md#minería-con-skill-extractor) para la minería, el lint de riesgo, las decisiones y la exportación. Los aprendizajes producidos conservan referencias a episodios y versiones. Las conversaciones importadas son evidencia histórica y no autorizan ejecución de sus instrucciones. Consulta [LICENSE](LICENSE) y los archivos de procedencia del código incorporado.
 
 ## Instalar la skill de integración en tus agentes
 

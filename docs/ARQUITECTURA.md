@@ -7,13 +7,15 @@ Adaptadores locales → eventos normalizados → revisiones SQLite
                                          ↓
                                 episodios y etiquetas
                                          ↓
-                      extractor → candidato mínimo con evidencia
+          skill-extractor (vendido) → candidato con evidencia y lint de riesgo
                                          ↓
                       snapshot + oráculo congelado + controles
                                          ↓
                  baseline / positivo → baseline / preventivo
                                          ↓
-                  gate → registro versionado → exportación
+       gate → decisión humana → registro versionado → exportación
+                                         ↓
+            decisiones → priores acotados del siguiente minado
 ```
 
 El controlador persistente mantiene límites, estados, presupuesto y decisiones. La UI consume un API local; no ejecuta comandos del sistema directamente. Un proveedor configurable realiza extracción y repetición. El RLM puede actuar como proveedor `command` si cumple el contrato de stdin/stdout; el scheduler duradero sigue siendo responsable de las reglas de promoción. El paquete no incorpora ni simula el runtime RLM de Prime Intellect.
@@ -50,6 +52,7 @@ Restaurar una versión cambia el arnés activo y conserva el historial. No sobre
 
 ## Referencias del diseño
 
+- [skill-extractor](https://github.com/surenode-ai/skill-extractor) (Apache-2.0, vendido): minería de skills, lint de riesgo y aprendizaje a partir de decisiones. [skill-forge](https://github.com/gzb1128/skill-forge) (MIT): reglas de aislamiento de pruebas emparejadas. [skill-optimizer](https://github.com/hqhq1025/skill-optimizer) (MIT): separación minar/personalizar/generalizar. Referencias: SKILL-DISCO (arXiv 2606.26669), SelfEvoSkill/PACE (arXiv 2606.14239), TRACE sobre fragilidad de verificadores (arXiv 2610.11678).
 - [Prime Agent](https://github.com/PrimeIntellect-ai/prime-agent): contexto del agente y refinamiento del arnés; Foundry expone un cliente Python para conectarlo a un loop.
 - [Verifiers v1](https://www.primeintellect.ai/blog/verifiers-v1): separación entre tareas, arnés y entorno de ejecución.
 - [Skills de Hermes](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/developer-guide/creating-skills.md): índice breve y carga de SKILL.md, scripts y recursos cuando resultan pertinentes.

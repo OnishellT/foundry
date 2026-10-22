@@ -7,13 +7,15 @@ Local adapters → normalized events → SQLite revisions
                                           ↓
                                   episodes and labels
                                           ↓
-                       extractor → minimal candidate with evidence
+        skill-extractor (vendored) → candidate with evidence and risk lint
                                           ↓
                        snapshot + frozen oracle + controls
                                           ↓
                   baseline / positive → baseline / preventive
                                           ↓
-                   gate → versioned registry → export
+        gate → human decision → versioned registry → export
+                                          ↓
+             decisions → bounded priors for the next mining run
 ```
 
 The persistent controller maintains limits, states, budgets and decisions. The UI consumes a local API; it does not execute system commands directly. A configurable provider performs extraction and replay. An RLM can act as a `command` provider if it follows the stdin/stdout contract; the durable scheduler remains responsible for promotion rules. This package neither includes nor simulates Prime Intellect's RLM runtime.
@@ -49,6 +51,7 @@ Restoring a version changes the active harness and retains history. It does not 
 
 ## Design references
 
+- [skill-extractor](https://github.com/surenode-ai/skill-extractor) (Apache-2.0, vendored): skill mining, risk lint and learning from decisions. [skill-forge](https://github.com/gzb1128/skill-forge) (MIT): paired-trial isolation rules. [skill-optimizer](https://github.com/hqhq1025/skill-optimizer) (MIT): mine/personalize/generalize split. Research: SKILL-DISCO (arXiv 2606.26669), SelfEvoSkill/PACE (arXiv 2606.14239), TRACE on verifier brittleness (arXiv 2610.11678).
 - [Prime Agent](https://github.com/PrimeIntellect-ai/prime-agent): agent context and harness refinement; Foundry exposes a Python client for connecting to a loop.
 - [Verifiers v1](https://www.primeintellect.ai/blog/verifiers-v1): separation of tasks, harness and execution environment.
 - [Hermes skills](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/developer-guide/creating-skills.md): a compact index and loading SKILL.md, scripts and resources when relevant.
