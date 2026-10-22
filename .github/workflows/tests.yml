@@ -1,0 +1,56 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  python:
+    name: unittest (python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Runtime is standard library only
+        run: python -c "import foundry_loop, foundry_loop.app, foundry_loop.miner, foundry_loop.publish"
+      - name: CLI help
+        run: python -m foundry_loop --help
+      - name: Unit and integration tests
+        run: python -m unittest discover -s tests -v
+      - name: Vendored files match VENDOR_PROVENANCE.json
+        run: |
+          python - <<'PY'
+          import hashlib, json, pathlib, sys
+          prov = json.loads(pathlib.Path('VENDOR_PROVENANCE.json').read_text())
+          listed = {f['path']: f['sha256'] for src in prov['sources'] for f in src['files'] + src.get('foundry_owned_files', [])}
+          bad = []
+          for p in sorted(pathlib.Path('foundry_loop/vendor').rglob('*')):
+              if p.is_file() and '__pycache__' not in p.parts:
+                  digest = hashlib.sha256(p.read_bytes()).hexdigest()
+                  if listed.get(p.as_posix()) != digest: bad.append(p.as_posix())
+          print('vendored files checked:', len(listed)); sys.exit('unlisted or changed: ' + ', '.join(bad) if bad else 0)
+          PY
+
+  ui:
+    name: ui typecheck and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+        working-directory: ui
+      - run: bun run typecheck
+        working-directory: ui
+      - run: bun run build
+        working-directory: ui
+      - name: Built assets are committed and current
+        run: git diff --stat --exit-code -- foundry_loop/web
