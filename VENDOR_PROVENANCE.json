@@ -1,27 +1,54 @@
 {
-  "source": "Conversation Foundry integration in AX, reviewed 2026-10-12",
-  "upstream_ax_commit": "c2aef9b876dcd96d8115f4be4a6b3c0da6d42a77",
-  "license": "AGPL-3.0-only",
-  "files": [
+  "sources": [
     {
-      "path": "foundry_loop/vendor/foundry/__init__.py",
-      "sha256": "b3d8d069aa7cf6ffa3b2b44ecf7a5663d5bd7131d9e200694a741813bb8e8ce1"
+      "source": "Conversation Foundry integration in AX, reviewed 2026-10-12",
+      "upstream_ax_commit": "c2aef9b876dcd96d8115f4be4a6b3c0da6d42a77",
+      "license": "AGPL-3.0-only",
+      "files": [
+        {
+          "path": "foundry_loop/vendor/foundry/__init__.py",
+          "sha256": "b3d8d069aa7cf6ffa3b2b44ecf7a5663d5bd7131d9e200694a741813bb8e8ce1"
+        },
+        {
+          "path": "foundry_loop/vendor/foundry/adapters.py",
+          "sha256": "d11da7b145e7d3c96e01d3ca7a750fd5d04a7039cf398cf677ed303e1bbb7b95"
+        },
+        {
+          "path": "foundry_loop/vendor/foundry/redact.py",
+          "sha256": "afaf40697d795cc5732a203d22fb2ca0a6b9eb93faeda7785355416ef8c7f2c6"
+        },
+        {
+          "path": "foundry_loop/vendor/foundry/util.py",
+          "sha256": "6410ba8664c4a65e9e757da5af1516d7f36ef2674608df710acc2831713019ae"
+        },
+        {
+          "path": "foundry_loop/vendor/native_adapters.py",
+          "sha256": "24868a9611dad9889e12db8a5c92c6c88019dd70eeaae3fef545d7c6075cab5b"
+        }
+      ]
     },
     {
-      "path": "foundry_loop/vendor/foundry/adapters.py",
-      "sha256": "d11da7b145e7d3c96e01d3ca7a750fd5d04a7039cf398cf677ed303e1bbb7b95"
-    },
-    {
-      "path": "foundry_loop/vendor/foundry/redact.py",
-      "sha256": "afaf40697d795cc5732a203d22fb2ca0a6b9eb93faeda7785355416ef8c7f2c6"
-    },
-    {
-      "path": "foundry_loop/vendor/foundry/util.py",
-      "sha256": "6410ba8664c4a65e9e757da5af1516d7f36ef2674608df710acc2831713019ae"
-    },
-    {
-      "path": "foundry_loop/vendor/native_adapters.py",
-      "sha256": "24868a9611dad9889e12db8a5c92c6c88019dd70eeaae3fef545d7c6075cab5b"
+      "source": "surenode-ai/skill-extractor engine (library surface per docs/INTEGRATION.md), vendored 2026-10-22",
+      "upstream_repository": "https://github.com/surenode-ai/skill-extractor",
+      "upstream_commit": "c53b6dd63d293fa0d44f710a6f63720541f094d0",
+      "license": "Apache-2.0",
+      "modified": false,
+      "files": [
+        {
+          "path": "foundry_loop/vendor/skill_extractor/lib.py",
+          "sha256": "82f1b4cb8d2bdc4f316d224b754ad914ae7f96dc5eaf08718ce287edfa021070"
+        },
+        {
+          "path": "foundry_loop/vendor/skill_extractor/LICENSE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+        },
+        {
+          "path": "foundry_loop/vendor/skill_extractor/NOTICE",
+          "sha256": "37ad29ca5b81bfe4989064ac996409a766b22bfaff874852bee969d2911c60aa"
+        }
+      ]
     }
-  ]
+  ],
+  "combined_license": "AGPL-3.0-only",
+  "license_direction": "Apache-2.0 and MIT code may be vendored into this AGPL-3.0-only project; nothing here is relicensed outward."
 }
