@@ -161,12 +161,22 @@ def _summarize(runs,cases,config,scope):
         ratio=after/before if before else None
         per_case.append({'case_id':case['id'],'split':case['split'],'pairs':len(local),'baseline_quality':sum(p['baseline']['status']=='pass' for p in local)/len(local) if local else None,'candidate_quality':sum(p['candidate']['status']=='pass' for p in local)/len(local) if local else None,'time_ratio':ratio})
         if ratio is not None and ratio>float(config.get('max_time_ratio',1.25)): reasons.append('límite de tiempo relativo excedido en caso '+case['id'])
-    if losses: reasons.append('regresión observada')
+        case_losses=sum(p['baseline']['status']=='pass' and p['candidate']['status']=='fail' for p in local)
+        per_case[-1]['losses']=case_losses
+        # Name the broken case: a regression against a frozen case is a verdict, not a statistic.
+        if case_losses: reasons.append('regresión observada en caso '+case['split']+' '+case['id']+' ('+case['title']+'): '+str(case_losses)+' par(es) en que el candidato falla donde la base aprueba')
     if any((p['baseline'].get('provider'),p['baseline'].get('model'))!=(p['candidate'].get('provider'),p['candidate'].get('model')) for p in valid): reasons.append('proveedor o modelo distinto entre brazos pareados')
     if not all(r.get('real_inference') is True for r in runs): reasons.append('driver mecánico o inferencia no acreditada')
     if time_ratio is None or time_ratio>float(config.get('max_time_ratio',1.25)): reasons.append('límite de tiempo relativo excedido')
     if not quality and not (efficiency and baseline==candidate==1): reasons.append('beneficio insuficiente o evidencia estadística insuficiente')
-    return {'eligible':not reasons,'reasons':reasons,'per_case':per_case,'paired_runs':len(pairs),'baseline_quality':baseline,'candidate_quality':candidate,'quality_gain':candidate-baseline,'wins':wins,'losses':losses,'quality_sign_p':quality_p,'efficiency_sign_p':efficiency_p,'token_sign_p':token_p,'time_ratio':time_ratio,'token_ratio':token_ratio,'baseline_turns':baseline_turns,'candidate_turns':candidate_turns,'turn_ratio':turn_ratio,'uncertainty':'Prueba de signos unilateral exacta; repeticiones de una tarea no prueban generalización a tareas nuevas. Umbral p <= 0.025 para dos formulaciones y cero regresiones observadas.','infrastructure_errors':len(infrastructure),'complete':complete}
+    # Paired-trial verdict (skill-forge change-boundaries): identical outcomes in
+    # every pair are "equivalent", never a silent pass or a silent regression.
+    if not complete or infrastructure: verdict='inconclusive'
+    elif losses: verdict='regressed'
+    elif not reasons: verdict='improved'
+    elif wins==0 and all(p['baseline']['status']==p['candidate']['status'] for p in valid): verdict='equivalent'
+    else: verdict='not_demonstrated'
+    return {'eligible':not reasons,'verdict':verdict,'reasons':reasons,'per_case':per_case,'paired_runs':len(pairs),'baseline_quality':baseline,'candidate_quality':candidate,'quality_gain':candidate-baseline,'wins':wins,'losses':losses,'quality_sign_p':quality_p,'efficiency_sign_p':efficiency_p,'token_sign_p':token_p,'time_ratio':time_ratio,'token_ratio':token_ratio,'baseline_turns':baseline_turns,'candidate_turns':candidate_turns,'turn_ratio':turn_ratio,'uncertainty':'Prueba de signos unilateral exacta; repeticiones de una tarea no prueban generalización a tareas nuevas. Umbral p <= 0.025 para dos formulaciones y cero regresiones observadas.','infrastructure_errors':len(infrastructure),'complete':complete}
 
 def _evaluate_candidate(store,candidate_id,job_id):
     from .providers import run_agent
@@ -301,9 +311,11 @@ def evaluate_candidate(store,candidate_id,job_id):
         write_json(store.root/'runs'/row['id']/'report.json',report)
         return report
 
-def promote(store,candidate_id,experiment_id):
+def promote(store,candidate_id,experiment_id,comment=''):
+    from .miner import risk_acknowledged, record_decision
     with store.transaction():
         candidate,spec=_candidate(store,candidate_id)
+        if not risk_acknowledged(store,candidate_id,spec): raise Invalid('El lint de riesgo marcó este candidato ('+', '.join(spec.get('risk') or [])+'); un humano debe reconocer los hallazgos antes de adoptarlo.')
         exp=store.one('SELECT * FROM experiments WHERE id=? AND candidate_id=?',(experiment_id,candidate_id))
         if not exp: raise Invalid('Experimento inexistente.')
         report=json.loads(exp['report'])
@@ -336,7 +348,8 @@ def promote(store,candidate_id,experiment_id):
         write_json(folder/'manifest.json',package)
         store.execute('INSERT INTO versions VALUES (?,?,?,?,?)',(id,base,js(members),now(),'Validated experiment '+experiment_id))
         store.set('active_version',id); store.execute("UPDATE candidates SET status='accepted' WHERE id=?",(candidate_id,)); store.audit('registry.promoted',{'version':id,'experiment_id':experiment_id,'package_hash':digest(package)})
-    return {'id':id,'parent':base,'members':members,'path':str(folder)}
+        decision=record_decision(store,candidate_id,'adopt',comment,{'version':id,'experiment_id':experiment_id})
+    return {'id':id,'parent':base,'members':members,'path':str(folder),'decision':decision}
 
 def rollback(store,version):
     with store.transaction():

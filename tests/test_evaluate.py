@@ -246,6 +246,47 @@ class ReplayTests(unittest.TestCase):
         self.assertFalse(summary['eligible']); self.assertIsNone(summary['baseline_turns']); self.assertIsNone(summary['turn_ratio'])
         self.assertIn('proveedor o modelo distinto entre brazos pareados',summary['reasons'])
 
+    def test_no_op_candidate_scores_equivalent_and_is_not_adopted(self):
+        # Both arms pass every pair: the gate must say "equivalent", never "improved".
+        self.prepare()
+        def always_good(config,prompt,cwd,cancel=None):
+            (Path(cwd)/'value.txt').write_text('good')
+            return self.agent(config,prompt,cwd,cancel)
+        with patch('foundry_loop.providers.run_agent',side_effect=always_good): report=evaluate_candidate(self.store,'candidate',None)
+        self.assertEqual(report['status'],'discarded')
+        for attempt in report['attempts']:
+            self.assertEqual(attempt['summary']['verdict'],'equivalent'); self.assertEqual((attempt['summary']['wins'],attempt['summary']['losses']),(0,0))
+        with self.assertRaises(Invalid): promote(self.store,'candidate',report['id'])
+        self.assertEqual(self.store.get('active_version'),'initial')
+
+    def test_broken_regression_case_is_named_by_the_gate(self):
+        cases=self.prepare()
+        regression=create_case(self.store,{**self.body,'split':'regression','title':'Keep value intact','prompt':'Leave value.txt as it is; it is already good.',
+            'positive_control':self.body['positive_control'],'negative_control':self.body['negative_control']})
+        self.store.execute('UPDATE episodes SET cases_json=? WHERE id=?',(js([c['id'] for c in cases]+[regression['id']]),'ep'))
+        def agent(config,prompt,cwd,cancel=None):
+            if 'Leave value.txt' in prompt and 'repair-value' in prompt: (Path(cwd)/'value.txt').write_text('broken by candidate')
+            elif 'Leave value.txt' in prompt: (Path(cwd)/'value.txt').write_text('good')
+            else: return self.agent(config,prompt,cwd,cancel)
+            return {'text':'done','usage':{'input_tokens':10,'output_tokens':10},'seconds':.1,'provider':'mock-only-test','model':'test','real_inference':True}
+        with patch('foundry_loop.providers.run_agent',side_effect=agent): report=evaluate_candidate(self.store,'candidate',None)
+        self.assertEqual(report['status'],'discarded')
+        summary=report['attempts'][0]['summary']
+        self.assertEqual(summary['verdict'],'regressed')
+        named=[r for r in summary['reasons'] if 'regresión observada en caso regression '+regression['id'] in r and 'Keep value intact' in r]
+        self.assertEqual(len(named),1)
+        self.assertEqual(next(c for c in summary['per_case'] if c['case_id']==regression['id'])['losses'],3)
+        with self.assertRaises(Invalid): promote(self.store,'candidate',report['id'])
+
+    def test_adoption_records_append_only_decision(self):
+        self.prepare()
+        with patch('foundry_loop.providers.run_agent',side_effect=self.agent): report=evaluate_candidate(self.store,'candidate',None)
+        version=promote(self.store,'candidate',report['id'],'Measured on the frozen origin and holdout.')
+        self.assertEqual(version['decision']['action'],'adopt')
+        rows=self.store.rows('SELECT * FROM decisions'); self.assertEqual(len(rows),1)
+        self.assertEqual(json.loads(rows[0]['detail'])['version'],version['id'])
+        self.assertEqual(rows[0]['comment'],'Measured on the frozen origin and holdout.')
+
     def test_reopened_baseline_capability_is_omitted_and_binding_changes(self):
         from foundry_loop.evaluate import _apply, _source_state
         cases=self.prepare(); candidate=self.store.one("SELECT * FROM candidates WHERE id='candidate'")
