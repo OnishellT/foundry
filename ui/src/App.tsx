@@ -1779,8 +1779,13 @@ function SessionEditor({ modal, p }: { modal: Modal; p: Props }) {
                     : "el agente")}
           </Button>
           <span className="meta">
-            {p.data.config.provider?.model || "Modelo configurado"} ·{" "}
-            {p.data.config.provider?.reasoning || "medium"} · consume cuota
+            {p.data.config.provider?.kind === "command"
+              ? "Adaptador command: " +
+                (p.data.config.provider?.command || []).join(" ")
+              : (p.data.config.provider?.model || "Modelo configurado") +
+                " · " +
+                (p.data.config.provider?.reasoning || "medium")}{" "}
+            · consume cuota
           </span>
         </div>
         {p.data.config.auto_tasks && (
