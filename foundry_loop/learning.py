@@ -1,5 +1,5 @@
 from __future__ import annotations
-import difflib, json, re, tempfile, zipfile
+import difflib, json, re, tempfile
 from pathlib import Path
 from .common import *
 from .providers import run_agent
@@ -237,14 +237,3 @@ def derive(store,episode_id,job_id):
         raise Invalid('Todas las skills minadas fueron rechazadas: '+'; '.join(r['reason'] for r in rejected))
     row=store.one('SELECT * FROM candidates WHERE id=?',((created or duplicates)[0],))
     return {**row,'candidate_ids':created,'duplicate_ids':duplicates,'rejected':rejected}
-
-def export_candidate(store,candidate_id):
-    row=store.one('SELECT * FROM candidates WHERE id=?',(candidate_id,))
-    if not row: raise Invalid('Aprendizaje desconocido.')
-    spec=json.loads(row['spec']); path=store.root/'exports'/(candidate_id+'.zip')
-    with zipfile.ZipFile(path,'w',zipfile.ZIP_DEFLATED) as z:
-        z.writestr('manifest.json',js({'candidate_id':candidate_id,'status':row['status'],'spec':spec}))
-        for key in ('positive','preventive'):
-            z.writestr(key+'/instructions.md',spec[key]['instructions'])
-            for f in spec[key]['files']: z.writestr(key+'/'+str(safe_relative(f['path'])),f['content'])
-    return {'download':'/api/export?id='+candidate_id,'path':str(path)}

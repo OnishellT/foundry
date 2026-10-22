@@ -71,6 +71,9 @@ def main():
     sync=sub.add_parser('sync',help='Instalar capacidades aceptadas en un proyecto explícito');sync.add_argument('--domain',required=True);sync.add_argument('--project',required=True)
     run=sub.add_parser('run',help='Ejecutar tu agente con el arnés activo e ingerir la tarea');run.add_argument('--domain',required=True);run.add_argument('--project',required=True);run.add_argument('--prompt',required=True);run.add_argument('--case',action='append',default=[])
     sub.add_parser('repl',help='Abrir Python con el cliente Foundry para un loop RLM')
+    export=sub.add_parser('export',help='Exportar un candidato como paquete Agent Skills generalizado e inspeccionable; exportar no aprueba');export.add_argument('--id',required=True)
+    inspect=sub.add_parser('inspect',help='Mostrar manifiesto, revisión y estado de gate de un paquete exportado sin instalarlo');inspect.add_argument('package')
+    imp=sub.add_parser('import',help='Instalar un paquete exportado como skill no administrada en .agents/skills/<name> de un proyecto, personalizada a este equipo');imp.add_argument('package');imp.add_argument('--project',required=True);imp.add_argument('--acknowledge-risk',action='store_true',help='Aceptar expresamente los hallazgos de riesgo del paquete tras revisarlos')
     args=parser.parse_args();root=args.data.expanduser().resolve()
     try:
         if args.command=='start':
@@ -146,6 +149,20 @@ def main():
             import code
             from .client import Foundry
             code.interact(banner='Foundry RLM client listo: foundry.state(), foundry.call(action, **kwargs), foundry.wait(job_id).',local={'foundry':Foundry(root)})
+        elif args.command=='export':
+            from .publish import export_candidate
+            s=Store(root)
+            try:print(js(export_candidate(s,args.id)))
+            finally:s.db.close()
+        elif args.command=='inspect':
+            from .publish import inspect_package
+            manifest,contents=inspect_package(args.package)
+            print(js({'manifest':{k:v for k,v in manifest.items() if k!='spec'},'name':manifest['spec']['name'],'description':manifest['spec'].get('description'),'files':sorted(contents),'skill':contents.get('skill/'+manifest['spec']['name']+'/SKILL.md')}))
+        elif args.command=='import':
+            from .publish import import_package
+            s=Store(root)
+            try:print(js(import_package(s,args.package,args.project,args.acknowledge_risk)))
+            finally:s.db.close()
         elif args.command=='versions':s=Store(root);print(js({'active':s.get('active_version'),'versions':s.rows('SELECT * FROM versions ORDER BY created DESC')}));s.db.close()
     except(Invalid,ValueError,OSError,KeyError)as e:print('Error: '+str(e),file=sys.stderr);sys.exit(1)
     except KeyboardInterrupt:pass

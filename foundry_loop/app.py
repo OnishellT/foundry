@@ -5,7 +5,8 @@ from .common import *
 from .store import Store,DEFAULTS
 from .providers import diagnostics
 from .ingest import register_source, scan_sources, session_detail, create_episode, _capture
-from .learning import derive, export_candidate
+from .learning import derive
+from .publish import export_candidate
 from .episodes import create_episode_safe
 
 DECODE={'config':'config','coverage':'coverage','spec':'spec','report':'report','members':'members','cases_json':'cases','verify_json':'verify','negative_json':'negative'}
