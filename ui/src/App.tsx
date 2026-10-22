@@ -2483,11 +2483,27 @@ function CandidateEditor({ modal, p }: { modal: Modal; p: Props }) {
         <span className="pill">{term(c.spec.kind)}</span>
         <span className="pill">{term(c.spec.scope)}</span>
         <span className="pill">{c.spec.domain}</span>
+        {c.spec.category && <span className="pill">{c.spec.category}</span>}
+        {c.spec.trace_outcome && (
+          <span className="pill">traza: {c.spec.trace_outcome}</span>
+        )}
+        {typeof c.spec.confidence === "number" && (
+          <span className="pill">
+            confianza {c.spec.confidence} · utilidad {c.spec.utility}
+          </span>
+        )}
         {active(p.data, c.id) && <Status value="active" />}
       </div>
       <p className="text-sm muted leading-6">
         {c.spec.description || c.spec.rationale}
       </p>
+      {Array.isArray(c.spec.risk) && c.spec.risk.length > 0 && (
+        <Notice tone="warning">
+          El lint de riesgo marcó: {c.spec.risk.join(", ")}. Revisa las
+          formulaciones antes de reconocerlo; la evaluación y la adopción
+          quedan bloqueadas hasta entonces.
+        </Notice>
+      )}
       {preventive && (
         <Notice>
           Se evaluará la formulación preventiva porque la tarea fue incorrecta.
@@ -2566,6 +2582,27 @@ function CandidateEditor({ modal, p }: { modal: Modal; p: Props }) {
                       onClick={() => p.open({ kind: "page", id: "settings" })}
                     >
                       Configurar
+                    </Button>
+                  )}
+                  {b.action === "acknowledge_risk" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={p.busy}
+                      onClick={async () => {
+                        const r = await p.run(
+                          "candidate.acknowledge_risk",
+                          {
+                            id: c.id,
+                            acknowledged: true,
+                            note: "Hallazgos revisados en la interfaz.",
+                          },
+                          "Riesgo reconocido; queda registrado en la auditoría.",
+                        );
+                        if (r) await load();
+                      }}
+                    >
+                      Reconocer riesgo
                     </Button>
                   )}
                   {["create_origin", "create_holdout"].includes(b.action) && (
@@ -2766,6 +2803,35 @@ function CandidateEditor({ modal, p }: { modal: Modal; p: Props }) {
         </Form>
         <Code value={c.spec.evidence || c.spec.source_revision} />
       </details>
+      {!active(p.data, c.id) &&
+        !["accepted", "evaluating", "rejected"].includes(c.status) && (
+          <details>
+            <summary>Rechazar aprendizaje</summary>
+            <p className="form-help my-3">
+              El motivo se guarda como decisión permanente y calibra el próximo
+              minado.
+            </p>
+            <Form
+              onSave={async (v) => {
+                await p.run(
+                  "candidate.reject",
+                  { id: c.id, comment: v.comment },
+                  "Aprendizaje rechazado; decisión registrada.",
+                );
+              }}
+            >
+              <Field
+                name="comment"
+                label="Motivo del rechazo"
+                initial=""
+                required
+              />
+              <Button type="submit" variant="outline">
+                Rechazar aprendizaje
+              </Button>
+            </Form>
+          </details>
+        )}
       <div className="btn-wrap">
         <Button variant="outline" onClick={download}>
           <ArrowDownToLine />
