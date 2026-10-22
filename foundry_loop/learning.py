@@ -173,7 +173,7 @@ def _mine(store,episode,job_id,events,coverage,cfg,project):
         result=checkpoint['result']
         items=miner.parse_response(result['text'])
     receipt.update(binding=identity,budget=store.get(budget_key),learned_from_decisions=int(priors.get('n_decisions',0)),
-                   calibration_chars=len(learning))
+                   calibration_chars=len(learning),checkpoint_key=checkpoint_key)
     return result,items,receipt,signals,priors
 
 def derive(store,episode_id,job_id):
@@ -234,6 +234,10 @@ def derive(store,episode_id,job_id):
         created.append(id)
         if cfg['auto_evaluate'] and json.loads(episode['cases_json']): store.job('evaluate',id)
     if not created and not duplicates:
+        # A fully rejected response is not worth replaying: drop its checkpoint so a
+        # retry asks the provider again instead of failing on the same fabrication.
+        store.execute('DELETE FROM kv WHERE key=?',(receipt['checkpoint_key'],))
+        store.audit('learning_checkpoint_discarded',{'episode':episode_id,'reason':'all_mined_skills_rejected'})
         raise Invalid('Todas las skills minadas fueron rechazadas: '+'; '.join(r['reason'] for r in rejected))
     row=store.one('SELECT * FROM candidates WHERE id=?',((created or duplicates)[0],))
     return {**row,'candidate_ids':created,'duplicate_ids':duplicates,'rejected':rejected}

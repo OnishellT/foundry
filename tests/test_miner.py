@@ -169,6 +169,17 @@ class MinerPipelineTests(unittest.TestCase):
             result = derive(self.store, episode, self.job(episode))
         self.assertEqual(result['status'], 'proposed')
 
+    def test_rejected_response_is_not_replayed_on_retry(self):
+        episode = self.example_episode(); job = self.job(episode)
+        fabricated = mined('this sentence never appeared')
+        with patch('foundry_loop.learning.run_agent', side_effect=self.driver(fabricated)) as provider, self.assertRaisesRegex(Invalid, 'rechazadas'):
+            derive(self.store, episode, job)
+        self.assertEqual(provider.call_count, 1)
+        self.store.execute("UPDATE jobs SET status='failed' WHERE id=?", (job,))
+        with patch('foundry_loop.learning.run_agent', side_effect=self.driver(mined())) as provider:
+            result = derive(self.store, episode, self.job(episode))
+        self.assertEqual(provider.call_count, 1); self.assertEqual(result['status'], 'proposed')
+
     def test_empty_mining_result_creates_nothing(self):
         episode = self.example_episode(); job = self.job(episode)
         with patch('foundry_loop.learning.run_agent', side_effect=self.driver({'skills': []})), self.assertRaisesRegex(Invalid, 'no se inventó'):
