@@ -21,10 +21,11 @@ from foundry_loop.store import DEFAULTS, Store
 
 
 def proposal():
-    return {'name':'http-check','description':'Check observable response','kind':'rule','scope':'domain','domain':'http',
-            'positive':{'instructions':'Check the response through HTTP.','files':[]},
-            'preventive':{'instructions':'Do not rely only on internals; inspect HTTP output.','files':[]},
-            'evidence':[{'event_index':0,'quote':'Check response'}],'replaces':[],'rationale':'Public behavior matters.'}
+    # skill-extractor mined-skill shape plus Foundry's evidence contract (miner.RESPONSE_SCHEMA).
+    return {'skills':[{'name':'http-check','title':'Check the public response','category':'guardrail','description':'Check observable response',
+            'trigger':'When a change claims to be done','body':'Check the response through HTTP.','trace_outcome':'success',
+            'outcome_reason':'Public behavior matters.','llm_confidence':.8,'llm_utility':.7,'tags':['http'],
+            'evidence':[{'quote':'Check response'}],'preventive_body':'Do not rely only on internals; inspect HTTP output.'}]}
 
 
 class RuntimeTests(unittest.TestCase):

@@ -224,7 +224,20 @@ class App:
             return select_candidate_cases(s,id,body.get('case_ids'))
         if action=='candidate.promote':
             from .evaluate import promote
-            return promote(s,id,body['experiment_id'])
+            return promote(s,id,body['experiment_id'],body.get('comment',''))
+        if action=='candidate.acknowledge_risk':
+            from .miner import acknowledge_risk
+            return acknowledge_risk(s,id,body.get('acknowledged'),body.get('note',''))
+        if action=='candidate.reject':
+            from .miner import record_decision
+            with s.transaction():
+                row=s.one('SELECT * FROM candidates WHERE id=?',(id,))
+                if not row: raise Invalid('Candidato desconocido.')
+                if row['status'] in ('accepted','active','promoted','evaluating'): raise Invalid('Cancela la evaluación o restaura una versión anterior antes de rechazar un candidato activo.')
+                decision=record_decision(s,id,'reject',body.get('comment',''),{'previous_status':row['status']})
+                s.execute("UPDATE candidates SET status='rejected' WHERE id=?",(id,))
+                s.execute("UPDATE jobs SET status='cancelled',updated=? WHERE kind='evaluate' AND subject=? AND status IN ('queued','running')",(now(),id))
+            return {'ok':True,'decision':decision}
         if action=='rollback':
             from .evaluate import rollback
             return rollback(s,body['version_id'])

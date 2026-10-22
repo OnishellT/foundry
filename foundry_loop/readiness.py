@@ -50,6 +50,8 @@ def candidate_readiness(store,candidate_id,deep=False):
             if deep: case_paths(store,case)
         except (Invalid,ValueError,KeyError) as exc:
             add(blockers,'snapshot_invalid','Recrea el snapshot/verificador de '+case['title']+': '+str(exc),'repair_snapshot')
+    from .miner import risk_acknowledged
+    if not risk_acknowledged(store,candidate_id,spec): add(blockers,'risk_unacknowledged','El lint de riesgo marcó patrones en las instrucciones ('+', '.join(spec['risk'])+'). Revísalos y reconócelos expresamente antes de evaluar o adoptar.','acknowledge_risk')
     if not any(c['split']=='origin' for c in cases): add(blockers,'missing_origin','Crea o selecciona un caso de origen: estado inicial del proyecto, instrucciones y un verificador observable con controles positivo y negativo.','create_origin')
     if not any(c['split']=='holdout' for c in cases): add(blockers,'missing_holdout','Añade un caso reservado distinto que compruebe transferencia; repetir el caso de origen no sirve como caso reservado.','create_holdout')
     if cases and not any(b['code']=='snapshot_invalid' for b in blockers) and not any(c['split']=='origin' and _applicable(store,candidate,spec,c) for c in cases): add(blockers,'scope_mismatch','El dominio o alcance no coincide con los casos de origen seleccionados.','edit_scope')
