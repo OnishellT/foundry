@@ -203,7 +203,14 @@ def derive(store,episode_id,job_id):
     preferred='positive' if episode['label']=='correct' else 'preventive'
     cfg=store.get('config')
     result,items,receipt,signals,priors=_mine(store,episode,job_id,events,coverage,cfg,project)
-    if not items: raise Invalid('El minero no encontró un aprendizaje reutilizable fundamentado; no se inventó ninguno.')
+    def discard_checkpoint(reason):
+        # A response that yields nothing is not worth replaying: drop it so a retry
+        # asks the provider again instead of failing forever on the cached answer.
+        store.execute('DELETE FROM kv WHERE key=?',(receipt['checkpoint_key'],))
+        store.audit('learning_checkpoint_discarded',{'episode':episode_id,'reason':reason})
+    if not items:
+        discard_checkpoint('no_skills_mined')
+        raise Invalid('El minero no encontró un aprendizaje reutilizable fundamentado; no se inventó ninguno.')
     created=[];duplicates=[];rejected=[]
     base=store.get('active_version')
     for item in items:
@@ -234,10 +241,7 @@ def derive(store,episode_id,job_id):
         created.append(id)
         if cfg['auto_evaluate'] and json.loads(episode['cases_json']): store.job('evaluate',id)
     if not created and not duplicates:
-        # A fully rejected response is not worth replaying: drop its checkpoint so a
-        # retry asks the provider again instead of failing on the same fabrication.
-        store.execute('DELETE FROM kv WHERE key=?',(receipt['checkpoint_key'],))
-        store.audit('learning_checkpoint_discarded',{'episode':episode_id,'reason':'all_mined_skills_rejected'})
+        discard_checkpoint('all_mined_skills_rejected')
         raise Invalid('Todas las skills minadas fueron rechazadas: '+'; '.join(r['reason'] for r in rejected))
     row=store.one('SELECT * FROM candidates WHERE id=?',((created or duplicates)[0],))
     return {**row,'candidate_ids':created,'duplicate_ids':duplicates,'rejected':rejected}

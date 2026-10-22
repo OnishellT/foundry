@@ -180,11 +180,15 @@ class MinerPipelineTests(unittest.TestCase):
             result = derive(self.store, episode, self.job(episode))
         self.assertEqual(provider.call_count, 1); self.assertEqual(result['status'], 'proposed')
 
-    def test_empty_mining_result_creates_nothing(self):
+    def test_empty_mining_result_creates_nothing_and_is_not_replayed(self):
         episode = self.example_episode(); job = self.job(episode)
         with patch('foundry_loop.learning.run_agent', side_effect=self.driver({'skills': []})), self.assertRaisesRegex(Invalid, 'no se inventó'):
             derive(self.store, episode, job)
         self.assertEqual(self.store.rows('SELECT * FROM candidates'), [])
+        self.store.execute("UPDATE jobs SET status='failed' WHERE id=?", (job,))
+        with patch('foundry_loop.learning.run_agent', side_effect=self.driver(mined())) as provider:
+            self.assertEqual(derive(self.store, episode, self.job(episode))['status'], 'proposed')
+        self.assertEqual(provider.call_count, 1)
 
     def test_incorrect_task_keeps_preventive_preference(self):
         episode = self.example_episode('incorrect'); job = self.job(episode)
