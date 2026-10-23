@@ -10,6 +10,8 @@ class ReplayTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory(); self.root=Path(self.temp.name)
         self.store=Store(self.root/'state'); self.project=self.root/'project'; self.project.mkdir()
+        # Mock runs last milliseconds, so their wall-clock ratio is scheduler noise. The time gate is exercised explicitly below.
+        self.store.set('config',{**self.store.get('config'),'max_time_ratio':10})
         (self.project/'value.txt').write_text('bad'); (self.project/'.env').write_text('SECRET_KEY=do-not-copy')
         self.oracle=self.root/'oracle'; self.oracle.mkdir()
         (self.oracle/'verify.py').write_text("from pathlib import Path\nimport sys\nsys.exit(0 if Path('value.txt').read_text()=='good' else 1)\n")
@@ -286,6 +288,18 @@ class ReplayTests(unittest.TestCase):
         rows=self.store.rows('SELECT * FROM decisions'); self.assertEqual(len(rows),1)
         self.assertEqual(json.loads(rows[0]['detail'])['version'],version['id'])
         self.assertEqual(rows[0]['comment'],'Measured on the frozen origin and holdout.')
+
+    def test_time_ratio_gate_discards_slow_candidate(self):
+        import time
+        self.prepare(); self.store.set('config',{**self.store.get('config'),'max_time_ratio':1.25})
+        def agent(config,prompt,cwd,cancel=None):
+            if 'repair-value' in prompt: time.sleep(.3)  # the candidate arm is the only one carrying the capability
+            return self.agent(config,prompt,cwd,cancel)
+        with patch('foundry_loop.providers.run_agent',side_effect=agent): report=evaluate_candidate(self.store,'candidate',None)
+        self.assertEqual(report['status'],'discarded')
+        reasons=[r for a in report['attempts'] for r in a['summary']['reasons']]
+        self.assertTrue(any('tiempo relativo' in r for r in reasons),reasons)
+        with self.assertRaises(Invalid): promote(self.store,'candidate',report['id'])
 
     def test_reopened_baseline_capability_is_omitted_and_binding_changes(self):
         from foundry_loop.evaluate import _apply, _source_state
