@@ -10,22 +10,11 @@
           "sha256": "b3d8d069aa7cf6ffa3b2b44ecf7a5663d5bd7131d9e200694a741813bb8e8ce1"
         },
         {
-          "path": "foundry_loop/vendor/foundry/adapters.py",
-          "sha256": "d11da7b145e7d3c96e01d3ca7a750fd5d04a7039cf398cf677ed303e1bbb7b95"
-        },
-        {
           "path": "foundry_loop/vendor/foundry/redact.py",
           "sha256": "afaf40697d795cc5732a203d22fb2ca0a6b9eb93faeda7785355416ef8c7f2c6"
-        },
-        {
-          "path": "foundry_loop/vendor/foundry/util.py",
-          "sha256": "6410ba8664c4a65e9e757da5af1516d7f36ef2674608df710acc2831713019ae"
-        },
-        {
-          "path": "foundry_loop/vendor/native_adapters.py",
-          "sha256": "24868a9611dad9889e12db8a5c92c6c88019dd70eeaae3fef545d7c6075cab5b"
         }
-      ]
+      ],
+      "note": "2026-10-23: adapters.py, util.py and native_adapters.py were removed as unused by the runtime; the bounded JSON record reader now lives in foundry_loop/ingest.py (_json)."
     },
     {
       "source": "surenode-ai/skill-extractor engine (library surface per docs/INTEGRATION.md), vendored 2026-10-22",

@@ -18,7 +18,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .common import Invalid, clean, digest, js, now, uid
-from .vendor.foundry.adapters import _json
 from .vendor.foundry.redact import sanitize
 
 ADAPTERS = {'codex', 'claude', 'pi', 'omp', 'canonical'}
@@ -28,6 +27,50 @@ NORMALIZER_VERSION = 'foundry-capture-v4-live-prefix'
 DISPLAY_METADATA_VERSION = 1
 # Explicit directory registration is not permission to ingest credential files.
 EXCLUDED = {'auth.json', 'credentials.json', 'settings.json', 'config.json', 'package.json', 'package-lock.json'}
+
+
+def _json(raw):
+    """Parse one record strictly: UTF-8, finite numbers, unique keys, bounded depth/size, object root.
+
+    Raises ValueError (Invalid) with a short reason so callers can record an issue instead of trusting the record.
+    """
+    def pairs(items):
+        value = {}
+        for key, item in items:
+            if key in value:
+                raise Invalid('duplicate_json_key')
+            value[key] = item
+        return value
+    def nonfinite(_):
+        raise Invalid('nonfinite_json')
+    try:
+        value = json.loads(raw.decode('utf-8', errors='strict'), object_pairs_hook=pairs, parse_constant=nonfinite)
+    except Invalid:
+        raise
+    except (UnicodeError, ValueError, RecursionError):
+        raise Invalid('malformed_json') from None
+    nodes = 0
+    def bounded(item, depth=0):
+        nonlocal nodes
+        nodes += 1
+        if depth > 20 or nodes > 20_000:
+            raise Invalid('structure_limit')
+        if isinstance(item, str):
+            try:
+                item.encode('utf-8', errors='strict')
+            except UnicodeError:
+                raise Invalid('invalid_unicode') from None
+        elif isinstance(item, dict):
+            for key, child in item.items():
+                bounded(key, depth + 1)
+                bounded(child, depth + 1)
+        elif isinstance(item, list):
+            for child in item:
+                bounded(child, depth + 1)
+    bounded(value)
+    if not isinstance(value, dict):
+        raise Invalid('record_not_object')
+    return value
 
 
 def register_source(store, path, adapter='canonical'):
