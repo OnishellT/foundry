@@ -1,5 +1,6 @@
+"""Shared primitives: canonical JSON, digests, redaction-aware text cleaning, atomic writes and bounded subprocesses."""
 from __future__ import annotations
-import hashlib, json, os, re, signal, subprocess, tempfile, time
+import hashlib, json, os, signal, subprocess, tempfile, time
 from pathlib import Path
 from .vendor.foundry.redact import sanitize
 

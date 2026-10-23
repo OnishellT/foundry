@@ -1,8 +1,9 @@
+"""SQLite store (WAL) with append-only evidence tables, a key-value area, and the job queue."""
 from __future__ import annotations
 import json, os, sqlite3, tempfile, threading
 from contextlib import closing, contextmanager
 from pathlib import Path
-from .common import *
+from .common import js, now, uid
 
 DEFAULTS={'capture':True,'auto_tasks':False,'task_idle_seconds':120,'auto_derive':True,'auto_evaluate':False,'auto_promote':False,
           'poll_seconds':15,'provider':{'kind':'pi','command':['pi'],'model':'gpt-6.1-sol','provider':'openai-codex','reasoning':'medium','timeout':180},

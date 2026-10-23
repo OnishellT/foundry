@@ -18,7 +18,7 @@ Research context: SKILL-DISCO (arXiv 2606.26669) and SelfEvoSkill/PACE
 frozen-snapshot gate measures it.
 """
 from __future__ import annotations
-import json, os, re, tempfile, threading
+import json, os, tempfile, threading
 from pathlib import Path
 from .common import Invalid, clean, digest, js, now, uid
 from .learning import validate_spec

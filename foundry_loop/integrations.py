@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 import tempfile
 
-from .common import Invalid, clean, digest, js, safe_relative, write_json
+from .common import Invalid, clean, digest, js, safe_relative
 from .evaluate import _members, _candidate, _applicable
 
 BEGIN = b'\n<!-- FOUNDRY:BEGIN managed active capabilities -->\n'

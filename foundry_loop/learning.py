@@ -1,7 +1,8 @@
+"""Turn a labelled episode into candidate learnings: one bounded mining call, strict spec validation, fingerprint dedupe."""
 from __future__ import annotations
 import difflib, json, re, tempfile
 from pathlib import Path
-from .common import *
+from .common import Invalid, clean, digest, js, now, safe_relative, uid
 from .providers import run_agent
 
 STRING={'type':'string'}

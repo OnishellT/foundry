@@ -1,3 +1,4 @@
+"""Command-line entry point: service lifecycle, configuration, backups, sync, and candidate export/import."""
 from __future__ import annotations
 import argparse, contextlib, json, os, subprocess, sys, time, urllib.error, urllib.request, webbrowser
 from pathlib import Path
@@ -107,7 +108,6 @@ def main():
             from .providers import diagnostics
             s=Store(root);print(js({'data':str(root),'running':bool(running(root)),**diagnostics(s.get('config'))}));s.db.close()
         elif args.command=='configure':
-            from .ingest import register_source
             s=Store(root);result={'sources':[]}
             if args.discover:
                 from .ingest import discover_sources

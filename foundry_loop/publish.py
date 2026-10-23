@@ -10,7 +10,7 @@ carries the candidate's gate status and risk findings, and an imported skill
 is installed as an unmanaged folder that only the local gate could ever promote.
 """
 from __future__ import annotations
-import getpass, hashlib, json, os, re, shutil, socket, zipfile
+import getpass, hashlib, json, re, shutil, socket, zipfile
 from pathlib import Path
 from .common import Invalid, clean, digest, js, now, safe_relative
 

@@ -1,10 +1,11 @@
+"""Loopback HTTP server: token-authenticated JSON API plus the prebuilt offline UI under foundry_loop/web."""
 from __future__ import annotations
 import hmac, json, mimetypes, os, threading
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs,urlsplit,unquote
 from .app import App, decoded
-from .common import *
+from .common import Invalid, clean, js, now, write_json
 
 WEB=Path(__file__).with_name('web')
 

@@ -1,9 +1,9 @@
 """Paired replay, evidence-bound promotion and reversible registry versions."""
 from __future__ import annotations
-import json, math, random, shutil, statistics, tempfile
+import json, math, random, shutil, tempfile
 from pathlib import Path
 from .common import Invalid, clean, digest, js, now, safe_relative, uid, write_json
-from .snapshots import case_paths, tree_hash, verifier_run
+from .snapshots import case_paths, verifier_run
 
 
 def _candidate(store,id):
