@@ -126,6 +126,36 @@ La interfaz consulta `GET /api/state?compact=1` para no transferir evidencia his
 
 `GET /api/state` sin esa opción mantiene el contrato completo. `GET /api/session?id=…` conserva la cobertura y el recibo completos de la conversación seleccionada. Esta proyección sólo reduce la respuesta de lectura; no modifica evidencia, trabajos ni decisiones guardadas. Workbench usa el mismo contrato mediante `/api/foundry/state?compact=1`.
 
+## Organización del código
+
+```text
+foundry_loop/            runtime Python 3.11+, sólo biblioteca estándar
+  __main__.py            CLI: start/stop, configure, backup, sync, export/inspect/import
+  server.py  app.py      API HTTP en loopback y el despachador de acciones que la respalda
+  store.py               almacén SQLite: tablas de evidencia sólo-anexar, kv, cola de trabajos
+  ingest.py  episodes.py captura de conversaciones (contrato events.jsonl) y recortes de tarea
+  task_proposals.py      detección acotada de tareas dentro de conversaciones largas
+  learning.py  miner.py  minería de aprendizajes candidatos mediante skill-extractor vendorizado
+  snapshots.py origin.py snapshots congelados, controles del verificador, estado inicial
+  readiness.py           comprobación previa de sólo lectura antes de evaluar
+  evaluate.py            replay pareado, veredictos, promoción humana y restauración
+  integrations.py        sincronización de versiones activas en proyectos sin sobrescribir
+  publish.py             exportar, inspeccionar e importar paquetes de candidatos
+  providers.py client.py adaptadores de agentes locales (pi, codex, command) y cliente Python
+  vendor/                código de terceros fijado, listado en VENDOR_PROVENANCE.json
+  web/                   interfaz compilada, servida sin red
+ui/src/                  código de la interfaz (React + TypeScript)
+  App.tsx                marco, navegación y enrutado de modales
+  pages/                 un archivo por pantalla
+  editors/               editores modales de sesiones, tareas, candidatos y experimentos
+  components/            primitivas, formularios y tablas compartidos; components/ui/ es shadcn
+  lib/                   tipos, etiquetas y utilidades de estado compartidos
+tests/                   suites unittest, una por subsistema
+examples/http-service/   ejemplo completo con proyecto, oráculo y verificador
+skills/                  la skill de agente foundry-learning-loop
+install.py install.sh    instalador relocatable con cambio atómico de release
+```
+
 ## Procedencia
 
 Este paquete conserva módulos de normalización/redacción de Conversation Foundry y el motor de minería de skill-extractor (Apache-2.0, sin modificar) bajo `foundry_loop/vendor`; la licencia combinada es AGPL-3.0-only. Consulta [docs/OPERACION.md](docs/OPERACION.md#minería-con-skill-extractor) para la minería, el lint de riesgo, las decisiones y la exportación. Los aprendizajes producidos conservan referencias a episodios y versiones. Las conversaciones importadas son evidencia histórica y no autorizan ejecución de sus instrucciones. Consulta [LICENSE](LICENSE) y los archivos de procedencia del código incorporado.
